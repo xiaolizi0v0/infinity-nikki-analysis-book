@@ -3,7 +3,7 @@ param([string]$Python = 'python')
 $ErrorActionPreference = 'Stop'
 $project = Split-Path -Parent $PSScriptRoot
 $appName = 'InfinityNikkiAnalysisBook'
-$packageName = 'infinity-nikki-analysis-book-windows-x64'
+$packageName = 'system-analysis-book-windows-x64'
 
 Push-Location -LiteralPath $project
 try {

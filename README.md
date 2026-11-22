@@ -2,13 +2,13 @@
   <img src="assets/logo.png" width="112" alt="拆解书系统图标">
 </p>
 
-<h1 align="center">无限暖暖 · 系统拆解书</h1>
+<h1 align="center">系统拆解书</h1>
 
 <p align="center">
-  <img src="https://img.shields.io/github/languages/code-size/xiaolizi0v0/infinity-nikki-analysis-book" alt="代码体积">
+  <img src="https://img.shields.io/github/languages/code-size/xiaolizi0v0/system-analysis-book" alt="代码体积">
   <img src="https://img.shields.io/badge/frontend-HTML%20%2F%20CSS%20%2F%20JS-blue" alt="HTML / CSS / JavaScript">
   <img src="https://img.shields.io/badge/launcher-Python%20%2B%20Tkinter-3776AB" alt="Python / Tkinter">
-  <img src="https://img.shields.io/github/license/xiaolizi0v0/infinity-nikki-analysis-book" alt="MIT 许可证">
+  <img src="https://img.shields.io/github/license/xiaolizi0v0/system-analysis-book" alt="MIT 许可证">
 </p>
 
 一个在本地运行的无限画布编辑器，用于撰写游戏系统拆解。可以把玩法循环、界面标注和设计观察放进同一份可编辑的拆解书，并按章节组织成多块画布。
@@ -43,8 +43,8 @@
 通过 GitHub 的 **Code → Download ZIP** 下载并解压，或使用 Git 克隆：
 
 ```sh
-git clone https://github.com/xiaolizi0v0/infinity-nikki-analysis-book.git
-cd infinity-nikki-analysis-book
+git clone https://github.com/xiaolizi0v0/system-analysis-book.git
+cd system-analysis-book
 ```
 
 在装有 Python 3 和 Tkinter 的电脑上，从项目根目录启动：
@@ -73,7 +73,7 @@ python -m venv .venv
 .\scripts\build-windows.ps1 -Python .\.venv\Scripts\python.exe
 ```
 
-生成的 `dist/infinity-nikki-analysis-book-windows-x64.zip` 包含启动器、网页、示例资源和第三方运行时许可。
+生成的 `dist/system-analysis-book-windows-x64.zip` 包含启动器、网页、示例资源和第三方运行时许可。
 
 ## 上手 Usage
 
