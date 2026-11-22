@@ -587,7 +587,18 @@ body.present .topbar { background: var(--glass-2); backdrop-filter: blur(10px); 
 .fc-edge-hit { fill: none; stroke: transparent; stroke-width: 14; cursor: pointer; }
 .fc-edge-g.is-sel .fc-edge { stroke: var(--violet); stroke-width: 2; }
 .fc-edge-g:hover .fc-edge { stroke: var(--violet-m); }
-.fc-temp { stroke: var(--violet) !important; stroke-dasharray: 5 4; stroke-width: 1.8; }
+.fc-temp {
+  stroke: var(--violet) !important; stroke-dasharray: 5 4; stroke-width: 1.8;
+  pointer-events: none;
+}
+.fc-temp-dot {
+  fill: var(--violet); stroke: var(--surface); stroke-width: 1.5;
+  pointer-events: none;
+}
+body.fc-connecting { cursor: crosshair; }
+body.fc-connecting .fc-g { cursor: crosshair; }
+.fc-g.drop .fc-node { stroke: var(--violet) !important; stroke-width: 2.2 !important; }
+
 .fc-svg-live .fc-g { cursor: grab; }
 .fc-svg-live .fc-g.dragging { cursor: grabbing; }
 .fc-svg-live .fc-g.sel .fc-node { stroke: var(--violet); stroke-width: 2.2; }

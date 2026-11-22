@@ -188,6 +188,35 @@ window.FlowEditor = (function () {
     return { x: (clientX - r.left - view.x) / view.z, y: (clientY - r.top - view.y) / view.z };
   }
 
+  // 屏幕坐标 → SVG 用户坐标（viewBox 原点、世界平移/缩放都要算进去）
+  function toSvg(clientX, clientY) {
+    if (svgEl) {
+      const ctm = svgEl.getScreenCTM && svgEl.getScreenCTM();
+      if (ctm) {
+        const m = ctm.inverse();
+        return {
+          x: m.a * clientX + m.c * clientY + m.e,
+          y: m.b * clientX + m.d * clientY + m.f,
+        };
+      }
+    }
+    // 兜底：手算 viewBox 原点
+    const p = toWorld(clientX, clientY);
+    return { x: p.x + (lastVB ? lastVB.x : 0), y: p.y + (lastVB ? lastVB.y : 0) };
+  }
+
+  // 拖拽预览：按锚点方向走「先横后竖 / 先竖后横」，任意方向都不会绕出怪钩
+  function previewPath(x1, y1, x2, y2, pos, r) {
+    const dx = x2 - x1, dy = y2 - y1;
+    if (!dx || !dy) return `M${x1},${y1} L${x2},${y2}`;
+    const rr = Math.min(r, Math.abs(dx) / 2, Math.abs(dy) / 2);
+    const sx = Math.sign(dx), sy = Math.sign(dy);
+    if (pos === 'l' || pos === 'r') {
+      return `M${x1},${y1} H${x2 - rr * sx} Q${x2},${y1} ${x2},${y1 + rr * sy} V${y2}`;
+    }
+    return `M${x1},${y1} V${y2 - rr * sy} Q${x1},${y2} ${x1 + rr * sx},${y2} H${x2}`;
+  }
+
   /* ---------------- 属性面板 ---------------- */
   function renderProp() {
     const box = overlay.querySelector('#fe-prop');
@@ -390,18 +419,38 @@ window.FlowEditor = (function () {
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     path.setAttribute('class', 'fc-edge fc-temp');
     layer.appendChild(path);
+    const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    dot.setAttribute('class', 'fc-temp-dot');
+    dot.setAttribute('r', '4');
+    layer.appendChild(dot);
 
     const sx = pos === 'l' ? fromGeo.x : pos === 'r' ? fromGeo.x + fromGeo.w : fromGeo.x + fromGeo.w / 2;
     const sy = pos === 't' ? fromGeo.y : pos === 'b' ? fromGeo.y + fromGeo.h : fromGeo.y + fromGeo.h / 2;
 
+    let hoverG = null;
+    const setHover = (g) => {
+      if (hoverG === g) return;
+      if (hoverG) hoverG.classList.remove('drop');
+      hoverG = g;
+      if (hoverG) hoverG.classList.add('drop');
+    };
+
     const move = (e) => {
-      const p = toWorld(e.clientX, e.clientY);
-      path.setAttribute('d', U.elbow(sx, sy, p.x, p.y, 10));
+      const p = toSvg(e.clientX, e.clientY);
+      path.setAttribute('d', previewPath(sx, sy, p.x, p.y, pos, 12));
+      dot.setAttribute('cx', p.x);
+      dot.setAttribute('cy', p.y);
+      const hit = document.elementFromPoint(e.clientX, e.clientY);
+      const g = hit && hit.closest ? hit.closest('.fc-g') : null;
+      setHover(g && g.dataset.nid !== fromId ? g : null);
     };
     const up = (e) => {
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
+      document.body.classList.remove('fc-connecting');
       path.remove();
+      dot.remove();
+      setHover(null);
       const hit = document.elementFromPoint(e.clientX, e.clientY);
       const g = hit && hit.closest ? hit.closest('.fc-g') : null;
       if (!g) return;
@@ -418,6 +467,7 @@ window.FlowEditor = (function () {
     };
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
+    document.body.classList.add('fc-connecting');
     ev.preventDefault();
     ev.stopPropagation();
   }
