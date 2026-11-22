@@ -723,7 +723,7 @@ window.Store = (function () {
         '<p class="dim">本册为面试用拆解样本，界面截图与系统表述以实机为准；数值与概率部分留待补充。</p>',
     });
 
-    return { version: 2, title: '无限暖暖 · 系统拆解书', boardName: '总览', elements: els, cover: cover.id };
+    return { version: 2, title: '无限暖暖 · 系统拆解示例', boardName: '总览', elements: els, cover: cover.id };
   }
 
   function init() {

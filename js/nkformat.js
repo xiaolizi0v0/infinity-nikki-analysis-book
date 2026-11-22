@@ -13,7 +13,7 @@ window.NK = (function () {
   const EXT = '.nkdraw';
   const MIME = 'application/x-nkdraw';
   const FORMAT = 1;
-  const APP = '无限暖暖 · 系统拆解书';
+  const APP = '析境';
 
   const enc = new TextEncoder();
   const dec = new TextDecoder();
@@ -244,7 +244,7 @@ window.NK = (function () {
       elements: allEls.length,
       boards: lists.length,
       assets: assets.length,
-      generator: '拆解书系统',
+      generator: 'Xijing',
       layout: ['meta.json', 'document.json', 'assets/*'],
     };
 

@@ -8,6 +8,7 @@ __pycache__/
 *.nkdraw
 *.bak
 /nikki_launcher_selftest.txt
+/xijing_launcher_selftest.txt
 .DS_Store
 Thumbs.db
 !/启动器/**

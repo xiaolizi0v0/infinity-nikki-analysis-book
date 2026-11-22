@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-无限暖暖 · 系统拆解书 — 本地启动器
+析境 · 可视化拆解工作台 — 本地启动器
 ------------------------------------------------
 双击本程序即可：启动本地静态服务 → 用默认浏览器打开拆解书系统。
 无外部依赖（仅标准库），可打包为单文件 exe。
@@ -15,8 +15,8 @@ from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 import tkinter as tk
 from tkinter import messagebox
 
-APP_TITLE = "无限暖暖 · 系统拆解书"
-APP_SUB = "本地拆解书系统 · 启动器"
+APP_TITLE = "析境 · 可视化拆解工作台"
+APP_SUB = "Xijing · 本地启动器"
 VER = "v1.0"
 
 # 配色（与拆解书系统一致）
@@ -414,10 +414,10 @@ def selftest():
         code = resp.status
         body = resp.read().decode("utf-8", "ignore")
     msg = "SELFTEST ok port=%s status=%s length=%s has_title=%s" % (
-        port, code, len(body), "无限暖暖" in body)
+        port, code, len(body), "析境" in body)
     try:
         import tempfile
-        with open(os.path.join(tempfile.gettempdir(), "nikki_launcher_selftest.txt"), "w", encoding="utf-8") as f:
+        with open(os.path.join(tempfile.gettempdir(), "xijing_launcher_selftest.txt"), "w", encoding="utf-8") as f:
             f.write(msg)
     except Exception:
         pass

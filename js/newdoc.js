@@ -98,8 +98,8 @@ window.NewDoc = (function () {
         ov.querySelectorAll('.ndlg-tpl').forEach((b) => b.classList.toggle('on', b === tpl));
         // 标题还停留在默认值时，跟着模板换一个合适的名字
         const cur = input.value.trim();
-        if (!cur || cur === '未命名拆解书' || cur === '无限暖暖 · 系统拆解书') {
-          input.value = sel === 'demo' ? '无限暖暖 · 系统拆解书' : '未命名拆解书';
+        if (!cur || cur === '未命名拆解书' || cur === '无限暖暖 · 系统拆解书' || cur === '无限暖暖 · 系统拆解示例') {
+          input.value = sel === 'demo' ? '无限暖暖 · 系统拆解示例' : '未命名拆解书';
           input.select();
         } else {
           input.focus();

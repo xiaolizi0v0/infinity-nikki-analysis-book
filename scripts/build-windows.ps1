@@ -2,8 +2,8 @@ param([string]$Python = 'python')
 
 $ErrorActionPreference = 'Stop'
 $project = Split-Path -Parent $PSScriptRoot
-$appName = 'InfinityNikkiAnalysisBook'
-$packageName = 'system-analysis-book-windows-x64'
+$appName = 'Xijing'
+$packageName = 'xijing-windows-x64'
 
 Push-Location -LiteralPath $project
 try {
@@ -25,12 +25,6 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'PyInstaller failed.' }
 
     $bundle = Join-Path (Join-Path $project 'dist') $appName
-    $runtime = Join-Path $bundle '_internal'
-    # The download uses the Microsoft runtimes installed on the destination PC.
-    Get-ChildItem -LiteralPath $runtime -File |
-        Where-Object Name -Match '^(vcruntime140(_1)?|ucrtbase|api-ms-win-.*)\.dll$' |
-        ForEach-Object { Remove-Item -LiteralPath $_.FullName }
-
     foreach ($entry in 'index.html', 'css', 'js', 'assets', 'icon.ico', 'LICENSE') {
         Copy-Item -LiteralPath $entry -Destination $bundle -Recurse
     }
