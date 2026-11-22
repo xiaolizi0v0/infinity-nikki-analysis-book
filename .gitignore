@@ -10,3 +10,4 @@ __pycache__/
 /nikki_launcher_selftest.txt
 .DS_Store
 Thumbs.db
+!/启动器/**
