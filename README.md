@@ -34,7 +34,9 @@
 
 ## 下载 Download
 
-在 Windows x64 上，从 [Releases](https://github.com/xiaolizi0v0/infinity-nikki-analysis-book/releases/latest) 下载 `infinity-nikki-analysis-book-windows-x64.zip`，完整解压后双击 `InfinityNikkiAnalysisBook.exe`。如果 Windows 提示缺少 `VCRUNTIME140.dll`，请安装 [Microsoft Visual C++ x64 Redistributable](https://learn.microsoft.com/cpp/windows/latest-supported-vc-redist)。
+通过 GitHub 的 **Code → Download ZIP** 下载整个仓库并完整解压，然后双击 `启动器/拆解书系统启动器.exe`。
+
+仓库已包含 Windows 启动器及其 `_internal` 运行依赖。请保留完整目录结构，启动器会自动找到项目首页并打开浏览器。
 
 ## 从源码运行 Run from Source
 
