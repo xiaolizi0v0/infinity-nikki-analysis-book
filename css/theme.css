@@ -1,0 +1,520 @@
+/* ==================================================================
+   theme.css — 配色令牌（多主题）
+   默认主题「雪绒紫」：变量值即原始配色，视觉与旧版一致。
+   其他主题只需覆盖同名变量；组件样式全部读取这些变量。
+   ------------------------------------------------------------------
+   命名约定：
+   --violet*  = 主题主色（不一定是紫色，随主题变化）
+   --paper    = 画布底色      --surface = 顶栏/卡片/弹窗底
+   --panel    = 侧栏底        --soft/--hover/--press = 三级浅底
+   ================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* ---------- 底与面 ---------- */
+  --paper: #F6F3FC;
+  --surface: #FFFFFF;
+  --panel: #FCFBFF;
+  --soft: #FAF8FF;
+  --hover: #F5F1FF;
+  --press: #F1ECFA;
+  --glass: rgba(255, 255, 255, .72);
+  --glass-2: rgba(255, 255, 255, .84);
+  --glass-3: rgba(255, 255, 255, .9);
+  --glass-4: rgba(255, 255, 255, .94);
+  --glass-line: rgba(236, 231, 247, .9);
+  --grid-a: rgba(112, 84, 190, .13);
+  --grid-b: rgba(112, 84, 190, .10);
+
+  /* ---------- 线 ---------- */
+  --line: #ECE7F7;
+  --line-2: #E2DAF3;
+  --line-3: #DCD2F6;
+  --line-soft: #F1ECFA;
+
+  /* ---------- 文字 ---------- */
+  --ink: #241B3A;
+  --ink-2: #4A4462;
+  --ink-3: #6E6788;
+  --muted: #9A94AE;
+  --muted-2: #A29BB6;
+  --faint: #B7B2C9;
+  --faint-2: #C6C0D6;
+  --ink-deep: #3C3455;
+  --ink-body: #3F3757;
+
+  /* ---------- 主题主色 ---------- */
+  --violet: #7C5CFF;
+  --violet-d: #6244D6;
+  --violet-2: #8E76E8;
+  --violet-m: #9C86F0;
+  --violet-l: #B9A6FF;
+  --violet-l2: #C9BEF0;
+  --violet-pale: #C2B2F0;
+  --violet-edge: #B4A5E3;
+  --violet-soft: #F1EBFF;
+  --violet-ink: #5C5080;
+  --dot-heading: #6E5BC0;
+
+  /* ---------- 粉 ---------- */
+  --pink: #F0729F;
+  --pink-l: #F08CB4;
+  --pink-ll: #F3AFCB;
+  --pink-soft: #FFF2F7;
+  --pink-wash: #FFF6FA;
+  --pink-line: #FCE4EE;
+  --pink-ink: #C4547C;
+  --pink-ink-2: #8C5872;
+  --pink-ink-3: #6B4757;
+
+  /* ---------- 琥珀 ---------- */
+  --amber: #E0912F;
+  --amber-l: #E9B45E;
+  --amber-m: #C98A2E;
+  --amber-soft: #FFF8EE;
+  --amber-line: #FBEBD2;
+  --amber-ink: #A9711F;
+  --amber-ink-2: #9C6A18;
+  --amber-ink-3: #B5822C;
+  --amber-ink-4: #6B5636;
+
+  /* ---------- 薄荷 ---------- */
+  --mint: #22A98D;
+  --mint-d: #1B8770;
+  --mint-b: #22B573;
+  --mint-b-d: #1C9E64;
+  --mint-soft: #EFFBF8;
+  --mint-line: #DAF3EC;
+  --mint-ink: #3F5F58;
+
+  /* ---------- 警示红 ---------- */
+  --danger: #D93E5C;
+  --danger-d: #C4495F;
+  --danger-dd: #B3324A;
+  --danger-x: #C42E4E;
+  --danger-soft: #FFF6F8;
+  --danger-soft-2: #FFEBF0;
+  --danger-line: #FBE0E6;
+  --danger-line-2: #F3B6C3;
+
+  /* ---------- 杂项 ---------- */
+  --blue: #2B7BFF;
+  --steel: #6FA8DC;
+  --scroll: #DED6F0;
+  --scroll-2: #C9BEE8;
+  --toast-bg: rgba(36, 27, 58, .92);
+
+  /* ---------- 文字卡片 ---------- */
+  --text-card-a: #FAF6FF;
+  --text-card-b: #F4EEFF;
+  --text-card-line: #F0E8FF;
+  --note-idea: #F8F3FF;
+  --note-idea-line: #EFE6FF;
+  --note-idea-ink: #4C4370;
+
+  /* ---------- 表格 ---------- */
+  --tb-head: #F8F5FF;
+  --tb-head-ink: #453D63;
+  --tb-head-line: #E7DEFB;
+  --tb-zebra: #FBFAFD;
+  --tb-first: #3C3455;
+
+  /* ---------- 流程图节点 ---------- */
+  --fc-start: #F6F1FF;
+  --fc-start-stroke: #C6B5FF;
+  --fc-end: #7C5CFF;
+  --fc-process: #FFFFFF;
+  --fc-process-stroke: #D8CCF6;
+  --fc-decision: #FFF6FA;
+  --fc-decision-stroke: #F3AFCB;
+  --fc-t-start: #5A4A85;
+  --fc-t-end: #FFFFFF;
+  --fc-t-process: #3C3455;
+  --fc-t-decision: #8C5872;
+  --fc-edge: #B4A5E3;
+  --fc-elabel: #241B3A;
+  --fc-elabel-halo: #FFFFFF;
+  --fc-arrow: #A99BE0;
+  --fc-shadow: #4A2C86;
+
+  /* ---------- 阴影 ---------- */
+  --shadow-s: 0 1px 2px rgba(58, 36, 110, .05), 0 4px 14px rgba(58, 36, 110, .05);
+  --shadow-m: 0 2px 6px rgba(58, 36, 110, .06), 0 14px 40px rgba(58, 36, 110, .09);
+}
+
+/* ==================================================================
+   晨光米 — 暖调纸张，主色赤陶
+   ================================================================== */
+html[data-theme="warm"] {
+  color-scheme: light;
+
+  --paper: #FBF5EC;
+  --surface: #FFFDF9;
+  --panel: #FDFAF4;
+  --soft: #FDF8F1;
+  --hover: #F8EFE3;
+  --press: #F3E6D5;
+  --glass: rgba(253, 250, 244, .74);
+  --glass-2: rgba(253, 250, 244, .86);
+  --glass-3: rgba(253, 250, 244, .92);
+  --glass-4: rgba(253, 250, 244, .95);
+  --glass-line: rgba(236, 223, 205, .9);
+  --grid-a: rgba(150, 110, 70, .14);
+  --grid-b: rgba(150, 110, 70, .10);
+
+  --line: #EFE3D3;
+  --line-2: #E6D7C3;
+  --line-3: #DCC7AC;
+  --line-soft: #F3E9DB;
+
+  --ink: #2E2418;
+  --ink-2: #544736;
+  --ink-3: #7A6A55;
+  --muted: #A2927C;
+  --muted-2: #AB9C86;
+  --faint: #BFB0A0;
+  --faint-2: #CDBFB0;
+  --ink-deep: #40331F;
+  --ink-body: #453A2A;
+
+  --violet: #C2703C;
+  --violet-d: #A65A2B;
+  --violet-2: #CE8A55;
+  --violet-m: #CF9464;
+  --violet-l: #E0B78F;
+  --violet-l2: #E7D2B8;
+  --violet-pale: #E3C6A6;
+  --violet-edge: #D8B896;
+  --violet-soft: #FBEEE0;
+  --violet-ink: #7A5233;
+  --dot-heading: #9A6234;
+
+  --scroll: #E2D4C2;
+  --scroll-2: #D3C0AA;
+  --toast-bg: rgba(46, 36, 24, .93);
+
+  --text-card-a: #FDF7EE;
+  --text-card-b: #F9EFE1;
+  --text-card-line: #F0E0CC;
+  --note-idea: #FDF5EA;
+  --note-idea-line: #F1E1CA;
+  --note-idea-ink: #55412A;
+
+  --tb-head: #FBF2E6;
+  --tb-head-ink: #4A3A25;
+  --tb-head-line: #F0DFC8;
+  --tb-zebra: #FDFAF5;
+  --tb-first: #42331E;
+
+  --fc-start: #FBF1E6;
+  --fc-start-stroke: #E5C6A4;
+  --fc-end: #C2703C;
+  --fc-process: #FFFDF9;
+  --fc-process-stroke: #E8D6C2;
+  --fc-decision: #FFF6F3;
+  --fc-decision-stroke: #F0C4B4;
+  --fc-t-start: #6B4A2C;
+  --fc-t-process: #3F3223;
+  --fc-t-decision: #8A5040;
+  --fc-edge: #C9A985;
+  --fc-elabel: #2E2418;
+  --fc-elabel-halo: #FFFDF9;
+  --fc-arrow: #C2A98C;
+  --fc-shadow: #6B4A2C;
+
+  --shadow-s: 0 1px 2px rgba(90, 62, 30, .05), 0 4px 14px rgba(90, 62, 30, .05);
+  --shadow-m: 0 2px 6px rgba(90, 62, 30, .06), 0 14px 40px rgba(90, 62, 30, .09);
+}
+
+/* ==================================================================
+   青瓷 — 冷调青绿，主色湖水绿
+   ================================================================== */
+html[data-theme="mint"] {
+  color-scheme: light;
+
+  --paper: #F1F7F5;
+  --surface: #FFFFFF;
+  --panel: #F8FCFA;
+  --soft: #F4FBF9;
+  --hover: #EAF5F1;
+  --press: #DFEFE9;
+  --glass: rgba(255, 255, 255, .74);
+  --glass-2: rgba(255, 255, 255, .86);
+  --glass-3: rgba(255, 255, 255, .92);
+  --glass-4: rgba(255, 255, 255, .95);
+  --glass-line: rgba(222, 238, 233, .9);
+  --grid-a: rgba(40, 120, 110, .13);
+  --grid-b: rgba(40, 120, 110, .09);
+
+  --line: #E0EDE8;
+  --line-2: #D2E4DE;
+  --line-3: #BFD9D1;
+  --line-soft: #E8F1EE;
+
+  --ink: #152B27;
+  --ink-2: #3B544E;
+  --ink-3: #5F7A73;
+  --muted: #8AA39C;
+  --muted-2: #93ABA4;
+  --faint: #B0C3BD;
+  --faint-2: #C4D3CE;
+  --ink-deep: #233C36;
+  --ink-body: #2C4640;
+
+  --violet: #1F9E86;
+  --violet-d: #17836F;
+  --violet-2: #37AE96;
+  --violet-m: #43B79F;
+  --violet-l: #8CD3C2;
+  --violet-l2: #C6E6DD;
+  --violet-pale: #B9DCD2;
+  --violet-edge: #A8CFC4;
+  --violet-soft: #E6F6F2;
+  --violet-ink: #2E6B5E;
+  --dot-heading: #2C7F6D;
+
+  --scroll: #D3E5DF;
+  --scroll-2: #BFD6CF;
+  --toast-bg: rgba(21, 43, 39, .93);
+
+  --text-card-a: #F5FBF9;
+  --text-card-b: #EAF6F2;
+  --text-card-line: #DBEEE8;
+  --note-idea: #F2FAF7;
+  --note-idea-line: #DDEFE9;
+  --note-idea-ink: #2F4F48;
+
+  --tb-head: #F0F8F5;
+  --tb-head-ink: #2C4640;
+  --tb-head-line: #DDEDE7;
+  --tb-zebra: #F9FCFB;
+  --tb-first: #233C36;
+
+  --fc-start: #EDF8F5;
+  --fc-start-stroke: #A8D8CB;
+  --fc-end: #1F9E86;
+  --fc-process: #FFFFFF;
+  --fc-process-stroke: #CBE3DC;
+  --fc-decision: #F8FBF6;
+  --fc-decision-stroke: #CBDFC0;
+  --fc-t-start: #33685C;
+  --fc-t-process: #233C36;
+  --fc-t-decision: #4F6B3F;
+  --fc-edge: #A6CBC1;
+  --fc-elabel: #152B27;
+  --fc-elabel-halo: #FFFFFF;
+  --fc-arrow: #ADCBC3;
+  --fc-shadow: #274A43;
+
+  --shadow-s: 0 1px 2px rgba(20, 70, 60, .05), 0 4px 14px rgba(20, 70, 60, .05);
+  --shadow-m: 0 2px 6px rgba(20, 70, 60, .06), 0 14px 40px rgba(20, 70, 60, .09);
+}
+
+/* ==================================================================
+   樱雾 — 柔粉，主色樱花
+   ================================================================== */
+html[data-theme="rose"] {
+  color-scheme: light;
+
+  --paper: #FDF4F7;
+  --surface: #FFFFFF;
+  --panel: #FEF9FB;
+  --soft: #FEF7FA;
+  --hover: #FBEEF3;
+  --press: #F7E3EB;
+  --glass: rgba(255, 255, 255, .74);
+  --glass-2: rgba(255, 255, 255, .86);
+  --glass-3: rgba(255, 255, 255, .92);
+  --glass-4: rgba(255, 255, 255, .95);
+  --glass-line: rgba(245, 226, 234, .9);
+  --grid-a: rgba(170, 90, 125, .13);
+  --grid-b: rgba(170, 90, 125, .09);
+
+  --line: #F7E3EB;
+  --line-2: #F0D6E0;
+  --line-3: #E7C3D2;
+  --line-soft: #FBEBF1;
+
+  --ink: #331C25;
+  --ink-2: #5B404A;
+  --ink-3: #82656F;
+  --muted: #A9929A;
+  --muted-2: #B09AA2;
+  --faint: #C7B0B8;
+  --faint-2: #D6C3C9;
+  --ink-deep: #452A34;
+  --ink-body: #4A303A;
+
+  --violet: #D9638F;
+  --violet-d: #C24E7B;
+  --violet-2: #E07AA0;
+  --violet-m: #E48BAC;
+  --violet-l: #F0B8CC;
+  --violet-l2: #F2D3DF;
+  --violet-pale: #EFC6D6;
+  --violet-edge: #E5B3C5;
+  --violet-soft: #FDEDF3;
+  --violet-ink: #8A4B65;
+  --dot-heading: #A8526F;
+
+  --scroll: #EFD9E1;
+  --scroll-2: #E2C6D0;
+  --toast-bg: rgba(51, 28, 37, .93);
+
+  --text-card-a: #FEF6F9;
+  --text-card-b: #FCEDF3;
+  --text-card-line: #F8E2EA;
+  --note-idea: #FDF4F8;
+  --note-idea-line: #F7E2EB;
+  --note-idea-ink: #5C3B47;
+
+  --tb-head: #FDF2F6;
+  --tb-head-ink: #573C46;
+  --tb-head-line: #F8E2EA;
+  --tb-zebra: #FEF9FB;
+  --tb-first: #452A34;
+
+  --fc-start: #FDF1F6;
+  --fc-start-stroke: #F0C0D3;
+  --fc-end: #D9638F;
+  --fc-process: #FFFFFF;
+  --fc-process-stroke: #F3D5E0;
+  --fc-decision: #FFF7F9;
+  --fc-decision-stroke: #F5C6D5;
+  --fc-t-start: #7A4358;
+  --fc-t-process: #452A34;
+  --fc-t-decision: #8C5266;
+  --fc-edge: #E0B4C4;
+  --fc-elabel: #331C25;
+  --fc-elabel-halo: #FFFFFF;
+  --fc-arrow: #DEBCC9;
+  --fc-shadow: #7A4358;
+
+  --shadow-s: 0 1px 2px rgba(110, 50, 75, .05), 0 4px 14px rgba(110, 50, 75, .05);
+  --shadow-m: 0 2px 6px rgba(110, 50, 75, .06), 0 14px 40px rgba(110, 50, 75, .09);
+}
+
+/* ==================================================================
+   夜航 — 深色，主色亮紫
+   ================================================================== */
+html[data-theme="night"] {
+  color-scheme: dark;
+
+  --paper: #15121F;
+  --surface: #201B2E;
+  --panel: #1B1727;
+  --soft: #262034;
+  --hover: #2E2740;
+  --press: #372E4E;
+  --glass: rgba(32, 27, 46, .74);
+  --glass-2: rgba(32, 27, 46, .86);
+  --glass-3: rgba(28, 23, 40, .92);
+  --glass-4: rgba(28, 23, 40, .95);
+  --glass-line: rgba(60, 50, 84, .85);
+  --grid-a: rgba(168, 148, 240, .18);
+  --grid-b: rgba(168, 148, 240, .10);
+
+  --line: #312A46;
+  --line-2: #3B3352;
+  --line-3: #4C3F6E;
+  --line-soft: #2C2540;
+
+  --ink: #F0EBFA;
+  --ink-2: #CFC7E2;
+  --ink-3: #A79EC0;
+  --muted: #8C84A3;
+  --muted-2: #948CA9;
+  --faint: #6E6689;
+  --faint-2: #5D5676;
+  --ink-deep: #E4DEF3;
+  --ink-body: #D6CFE8;
+
+  --violet: #9C82FF;
+  --violet-d: #B49DFF;
+  --violet-2: #8E76E8;
+  --violet-m: #B7A4FF;
+  --violet-l: #5F4E92;
+  --violet-l2: #4A3C74;
+  --violet-pale: #4E4177;
+  --violet-edge: #6B5AA0;
+  --violet-soft: #2C2444;
+  --violet-ink: #B7ACD6;
+  --dot-heading: #A792E8;
+
+  --pink: #FF8FB4;
+  --pink-l: #FF9EC0;
+  --pink-ll: #B96B8C;
+  --pink-soft: #33222C;
+  --pink-wash: #2E1F28;
+  --pink-line: #4A2C3B;
+  --pink-ink: #FF9DBC;
+  --pink-ink-2: #C98AA6;
+  --pink-ink-3: #B08B9D;
+
+  --amber: #F0B45F;
+  --amber-l: #F3C179;
+  --amber-m: #DBA45A;
+  --amber-soft: #322718;
+  --amber-line: #4A3A1F;
+  --amber-ink: #F0B45F;
+  --amber-ink-2: #E8B36C;
+  --amber-ink-3: #E5B36A;
+  --amber-ink-4: #C9AE8A;
+
+  --mint: #4ECFB0;
+  --mint-d: #63DCBE;
+  --mint-b: #4ECFA0;
+  --mint-b-d: #3FBF90;
+  --mint-soft: #152E2A;
+  --mint-line: #26443E;
+  --mint-ink: #9FD8CB;
+
+  --danger: #FF7D93;
+  --danger-d: #FF8A9F;
+  --danger-dd: #FF9DAF;
+  --danger-x: #FF9AA8;
+  --danger-soft: #33202A;
+  --danger-soft-2: #3B2029;
+  --danger-line: #4E2C38;
+  --danger-line-2: #6B3A48;
+
+  --blue: #5B9BFF;
+  --steel: #7FB4E8;
+  --scroll: #453B60;
+  --scroll-2: #564A76;
+  --toast-bg: rgba(10, 8, 18, .94);
+
+  --text-card-a: #241E36;
+  --text-card-b: #2B2440;
+  --text-card-line: #3A3154;
+  --note-idea: #241E36;
+  --note-idea-line: #3A3154;
+  --note-idea-ink: #CFC6E6;
+
+  --tb-head: #2A2440;
+  --tb-head-ink: #D9D2EC;
+  --tb-head-line: #3B3354;
+  --tb-zebra: #221D31;
+  --tb-first: #E2DCF2;
+
+  --fc-start: #2A2342;
+  --fc-start-stroke: #4A3D75;
+  --fc-end: #8A6CFF;
+  --fc-process: #241F33;
+  --fc-process-stroke: #3E3459;
+  --fc-decision: #2E222C;
+  --fc-decision-stroke: #6B4356;
+  --fc-t-start: #D9D0F4;
+  --fc-t-end: #FFFFFF;
+  --fc-t-process: #DDD6EE;
+  --fc-t-decision: #E7BDCE;
+  --fc-edge: #6B5C9E;
+  --fc-elabel: #E4DEF3;
+  --fc-elabel-halo: #1B1727;
+  --fc-arrow: #7E6FB4;
+  --fc-shadow: #000000;
+
+  --shadow-s: 0 1px 2px rgba(0, 0, 0, .28), 0 4px 14px rgba(0, 0, 0, .22);
+  --shadow-m: 0 2px 6px rgba(0, 0, 0, .3), 0 14px 40px rgba(0, 0, 0, .38);
+}

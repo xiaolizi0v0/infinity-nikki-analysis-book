@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+.venv/
+/_build/
+/build/
+/dist/
+/启动器/
+*.spec
+*.nkdraw
+*.bak
+/nikki_launcher_selftest.txt
+.DS_Store
+Thumbs.db
