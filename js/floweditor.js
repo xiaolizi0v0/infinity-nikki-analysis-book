@@ -499,8 +499,10 @@ window.FlowEditor = (function () {
     const ta = document.createElement('textarea');
     ta.className = 'fe-inline';
     ta.value = node.text || '';
-    ta.style.left = r.left + geo.x * view.z + view.x + 'px';
-    ta.style.top = r.top + geo.y * view.z + view.y + 'px';
+    const ox = lastVB ? lastVB.x : 0;
+    const oy = lastVB ? lastVB.y : 0;
+    ta.style.left = r.left + (geo.x - ox) * view.z + view.x + 'px';
+    ta.style.top = r.top + (geo.y - oy) * view.z + view.y + 'px';
     ta.style.width = Math.max(geo.w * view.z, 120) + 'px';
     ta.style.height = Math.max(geo.h * view.z, 40) + 'px';
     document.body.appendChild(ta);

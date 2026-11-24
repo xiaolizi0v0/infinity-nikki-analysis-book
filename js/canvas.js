@@ -6,6 +6,8 @@ window.Canvas = (function () {
   let nodes = new Map();
   let selId = null;
   let selNodeId = null;
+  let selIds = new Set();
+  let marqueeEl = null;
   let view = { x: 80, y: 60, z: 0.65 };
   const MINZ = 0.18, MAXZ = 2.6;
   let drag = null;
@@ -139,7 +141,11 @@ window.Canvas = (function () {
       nodes.set(e.id, n);
       if (e.type === 'image') paintImage(n, e);
     });
-    if (selId && !nodes.has(selId)) { selId = null; selNodeId = null; }
+    if (window.Groups) Groups.syncAll();
+    const alive = new Set((Store.get().elements || []).map((e) => e.id));
+    selIds.forEach((id) => { if (!alive.has(id)) selIds.delete(id); });
+    if (selId && !alive.has(selId)) selId = null;
+    if (!selId && selIds.size) selId = Array.from(selIds)[selIds.size - 1];
     highlightNode();
     updateOverlay();
     drawMini();
@@ -168,6 +174,7 @@ window.Canvas = (function () {
         if (e.w < natural) { e.w = Math.round(natural); n.style.width = e.w + 'px'; }
       }
     }
+    if (window.Groups) Groups.syncAll();
     highlightNode();
     updateOverlay();
     drawMini();
@@ -175,11 +182,14 @@ window.Canvas = (function () {
 
   function highlightNode() {
     U.$$('.fc-g.sel', world).forEach((g) => g.classList.remove('sel'));
-    U.$$('.el.sel', world).forEach((n) => n.classList.remove('sel'));
+    U.$$('.el', world).forEach((n) => {
+      const on = selIds.has(n.dataset.id);
+      n.classList.toggle('sel', on);
+      n.classList.toggle('sel-many', on && selIds.size > 1);
+    });
     if (!selId) return;
     const host = nodes.get(selId);
-    if (host) host.classList.add('sel');
-    if (!selNodeId || !host) return;
+    if (!selNodeId || !host || selIds.size !== 1) return;
     const g = host.querySelector(`.fc-g[data-nid="${selNodeId}"]`);
     if (g) g.classList.add('sel');
     if (window.Tables) Tables.reapply();
@@ -187,17 +197,44 @@ window.Canvas = (function () {
 
   /* ---------------- 选择框 ---------------- */
   function updateOverlay() {
-    const n = selId && nodes.get(selId);
+    if (!overlay) return;
     const cellEditing = !!(window.Tables && Tables.isEditing());
+    const ids = Array.from(selIds);
+
+    // 多选：只画一个虚线包围盒 + 数量标签，不出缩放手柄
+    if (ids.length > 1 && !editing && !cellEditing) {
+      const wr = wrap.getBoundingClientRect();
+      let l = Infinity, t = Infinity, r = -Infinity, b = -Infinity;
+      ids.forEach((id) => {
+        const n = nodes.get(id);
+        if (!n) return;
+        const nr = n.getBoundingClientRect();
+        l = Math.min(l, nr.left - wr.left);
+        t = Math.min(t, nr.top - wr.top);
+        r = Math.max(r, nr.right - wr.left);
+        b = Math.max(b, nr.bottom - wr.top);
+      });
+      if (!isFinite(l)) { overlay.style.display = 'none'; overlay.innerHTML = ''; return; }
+      const tagTop = b + 26 > wr.height ? Math.max(0, t - 22) : b + 6;
+      overlay.style.display = 'block';
+      overlay.innerHTML =
+        `<div class="sel-box is-multi" style="left:${l}px;top:${t}px;width:${r - l}px;height:${b - t}px"></div>` +
+        `<div class="sel-tag is-multi" style="left:${l}px;top:${tagTop}px">${ids.length} 个组件</div>`;
+      return;
+    }
+
+    const n = selId && nodes.get(selId);
     if (!n || editing || cellEditing) { overlay.style.display = 'none'; overlay.innerHTML = ''; return; }
     const wr = wrap.getBoundingClientRect();
     const r = n.getBoundingClientRect();
     const l = r.left - wr.left, t = r.top - wr.top, w = r.width, h = r.height;
     const type = (Store.el(selId) || {}).type;
     const dirs =
-      type === 'image'
-        ? ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']
-        : ['nw', 'ne', 'sw', 'se', 'e', 'w'];
+      type === 'group'
+        ? []
+        : type === 'image'
+          ? ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']
+          : ['nw', 'ne', 'sw', 'se', 'e', 'w'];
     overlay.style.display = 'block';
     overlay.innerHTML =
       `<div class="sel-box" style="left:${l}px;top:${t}px;width:${w}px;height:${h}px"></div>` +
@@ -208,7 +245,8 @@ window.Canvas = (function () {
   }
 
   function typeLabel(t) {
-    return { flowchart: '流程图', image: '图片', text: '文字', note: '标注', heading: '标题', table: '表格' }[t] || '元素';
+    if (window.ComponentRegistry && ComponentRegistry.get(t)) return ComponentRegistry.get(t).label;
+    return { flowchart: '流程图', image: '图片', text: '文字', note: '标注', heading: '标题', table: '表格', state: '状态图' }[t] || '元素';
   }
 
   function handlePos(d, l, t, w, h) {
@@ -224,17 +262,68 @@ window.Canvas = (function () {
   }
 
   /* ---------------- 选择 ---------------- */
-  function select(id, nodeId) {
-    if (selId === id && selNodeId === nodeId) { updateOverlay(); return; }
+  // 统一入口：ids 为全部选中项，列表最后一个作为「主选」（右侧面板的定位基准）
+  function applySelection(ids, nodeId) {
     if (editing) finishEdit();
-    selId = id || null;
+    const list = [];
+    (ids || []).forEach((id) => { if (id && list.indexOf(id) < 0) list.push(id); });
+    selIds = new Set(list);
+    selId = list.length ? list[list.length - 1] : null;
     selNodeId = nodeId || null;
     highlightNode();
     updateOverlay();
+  }
+
+  function select(id, nodeId) {
+    if (!id) {
+      if (!selIds.size && selNodeId == null) { updateOverlay(); return; }
+      applySelection([], null);
+      fire('select', null);
+      return;
+    }
+    if (selIds.size === 1 && selId === id && selNodeId === (nodeId || null)) { updateOverlay(); return; }
+    applySelection([id], nodeId);
     fire('select', selId);
   }
+
+  function selectMany(ids) {
+    applySelection(ids, null);
+    fire('select', selId);
+  }
+
+  function toggleSelect(id) {
+    const ids = Array.from(selIds);
+    if (selIds.has(id)) applySelection(ids.filter((x) => x !== id), null);
+    else applySelection(ids.concat(id), null);
+    fire('select', selId);
+  }
+
+  function selectAll() {
+    const ids = (Store.get().elements || []).map((e) => e.id);
+    if (!ids.length) return;
+    applySelection(ids, null);
+    fire('select', selId);
+  }
+
+  // 一次删除所有选中组件（单事务，可一次撤销）
+  function removeSelection() {
+    if (!selIds.size) return;
+    const ids = Array.from(selIds);
+    Store.begin();
+    const arr = Store.get().elements || [];
+    ids.forEach((id) => {
+      const i = arr.findIndex((e) => e.id === id);
+      if (i >= 0) arr.splice(i, 1);
+    });
+    selIds = new Set();
+    selId = null;
+    selNodeId = null;
+    Store.end('remove'); // 触发 app 统一重绘
+  }
+
   function getSel() { return selId; }
   function getSelNode() { return selNodeId; }
+  function getSelIds() { return Array.from(selIds); }
 
   /* ---------------- 拖拽 / 缩放 ---------------- */
   function bind() {
@@ -271,7 +360,7 @@ window.Canvas = (function () {
     });
 
     wrap.addEventListener('click', (ev) => {
-      const editBtn = ev.target.closest('.el-edit, .fc-edit, .shot-edit, .tb-edit');
+      const editBtn = ev.target.closest('.el-edit, .fc-edit, .shot-edit, .tb-edit, .st-edit');
       if (editBtn) {
         const host = editBtn.closest('.el');
         if (host) openEditor(host.dataset.id);
@@ -289,6 +378,12 @@ window.Canvas = (function () {
     wrap.addEventListener('dragover', (ev) => { ev.preventDefault(); });
     wrap.addEventListener('drop', (ev) => {
       ev.preventDefault();
+      const compType = ev.dataTransfer && ev.dataTransfer.getData('application/x-nk-component');
+      if (compType && window.ComponentRegistry && ComponentRegistry.has(compType)) {
+        const p = s2w(ev.clientX, ev.clientY);
+        addAt(compType, p.x, p.y);
+        return;
+      }
       const f = ev.dataTransfer.files && ev.dataTransfer.files[0];
       if (f && /^image\//.test(f.type)) importImageFile(f, s2w(ev.clientX, ev.clientY));
     });
@@ -312,6 +407,12 @@ window.Canvas = (function () {
     if (e.type === 'flowchart' && window.FlowEditor) return FlowEditor.open(id);
     if (e.type === 'image' && window.ImgEditor) return ImgEditor.open(id);
     if (e.type === 'table' && window.TableEditor) return TableEditor.open(id);
+    if (e.type === 'state' && window.StateEditor) return StateEditor.open(id);
+    if (window.CardEditor && CardEditor.can(e.type)) return CardEditor.open(id);
+    if (window.AdvancedEditor && AdvancedEditor.can(e.type)) return AdvancedEditor.open(id);
+    if ({ timeline: 1, cycle: 1, hierarchy: 1, matrix: 1, compare: 1, columns: 1, video: 1, semantic: 1, group: 1 }[e.type]) {
+      if (window.Panels && Panels.focusProps) return Panels.focusProps(id);
+    }
     if (window.TextEditor) return TextEditor.open(id);
   }
 
@@ -327,7 +428,10 @@ window.Canvas = (function () {
     }
     if (ev.button !== 0) return;
 
-    if (ev.target.closest('.fc-edit, .shot-edit, .el-edit')) return; // 交给 click 打开编辑器
+    // 画布上的浮动界面（小地图、画布条等）不参与框选 / 拖动
+    if (ev.target.closest('.minimap, .boardbar, .bb-panel, .bb-menu, .corner-hint')) return;
+
+    if (ev.target.closest('.fc-edit, .shot-edit, .el-edit, .st-edit')) return; // 交给 click 打开编辑器
 
     const handle = ev.target.closest('.sel-h');
     if (handle) {
@@ -338,32 +442,115 @@ window.Canvas = (function () {
 
     const host = ev.target.closest('.el');
     if (!host) {
-      select(null);
       if (window.Tables) Tables.setActive(null, null, null, true);
-      drag = { mode: 'marquee-ignore', sx: ev.clientX, sy: ev.clientY, vx: view.x, vy: view.y, moved: false };
+      startMarquee(ev); // 左键拖空白处 = 框选多个组件
       return;
     }
     if (ev.target.isContentEditable && ev.target.closest('.el') === host) {
       return; // 正在编辑文字
     }
+    if (ev.target.closest('video, .vid-player, .vid-gif')) {
+      return; // 让播放控件接管，视频卡片通过标题 / 说明选中
+    }
 
     const id = host.dataset.id;
     const nodeG = ev.target.closest('.fc-g');
-    select(id, nodeG ? nodeG.dataset.nid : null);
+    const additive = ev.ctrlKey || ev.metaKey || ev.shiftKey;
 
-    const e = Store.el(id);
-    if (!e) return;
-    Store.begin();
-    drag = {
-      mode: 'move', id, sx: ev.clientX, sy: ev.clientY,
-      ex: e.x, ey: e.y, moved: false, host,
+    // Ctrl / ⌘ / Shift + 点击：只增减选中项，不进入拖动
+    if (additive) {
+      ev.preventDefault();
+      toggleSelect(id);
+      return;
+    }
+
+    if (!selIds.has(id) || selIds.size === 1) {
+      select(id, nodeG ? nodeG.dataset.nid : null);
+    } else if (nodeG && nodeG.dataset.nid) {
+      // 多选状态下点到卡片内部节点：只记录节点，不改多选
+      selNodeId = nodeG.dataset.nid;
+      highlightNode();
+    }
+
+    startMove(ev, Array.from(selIds));
+    ev.preventDefault();
+  }
+
+  /* ---------------- 左键框选 ---------------- */
+  function ensureMarquee() {
+    if (marqueeEl) return marqueeEl;
+    marqueeEl = U.h('div', { class: 'marquee-box' });
+    wrap.appendChild(marqueeEl);
+    return marqueeEl;
+  }
+
+  // 框选命中：与选框有交叠的组件都算选中（和 Figma / Miro 一致）
+  function pickInRect(r) {
+    const out = [];
+    (Store.get().elements || []).forEach((e) => {
+      const n = nodes.get(e.id);
+      if (!n) return;
+      const b = n.getBoundingClientRect();
+      const ox = Math.min(r.right, b.right) - Math.max(r.left, b.left);
+      const oy = Math.min(r.bottom, b.bottom) - Math.max(r.top, b.top);
+      if (ox > 3 && oy > 3) out.push(e.id);
+    });
+    return out;
+  }
+
+  function startMarquee(ev) {
+    if (editing) finishEdit();
+    const wr = wrap.getBoundingClientRect();
+    const additive = ev.shiftKey || ev.ctrlKey || ev.metaKey;
+    const base = additive ? Array.from(selIds) : [];
+    if (!additive) {
+      applySelection([], null);
+      fire('select', null);
+    }
+
+    const box = ensureMarquee();
+    const sx = ev.clientX, sy = ev.clientY;
+    const ox = sx - wr.left, oy = sy - wr.top;
+    let moved = false;
+    let picked = base;
+
+    wrap.classList.add('marquee');
+
+    const move = (e) => {
+      if (!moved && Math.hypot(e.clientX - sx, e.clientY - sy) < 4) return;
+      const cx = e.clientX - wr.left, cy = e.clientY - wr.top;
+      if (!moved) {
+        moved = true;
+        box.style.display = 'block';
+        if (window.Tables) Tables.setActive(null, null, null, true);
+      }
+      box.style.left = Math.min(ox, cx) + 'px';
+      box.style.top = Math.min(oy, cy) + 'px';
+      box.style.width = Math.abs(cx - ox) + 'px';
+      box.style.height = Math.abs(cy - oy) + 'px';
+      picked = base.concat(pickInRect({
+        left: Math.min(sx, e.clientX), top: Math.min(sy, e.clientY),
+        right: Math.max(sx, e.clientX), bottom: Math.max(sy, e.clientY),
+      }));
+      applySelection(picked, null);
     };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      wrap.classList.remove('marquee');
+      box.style.display = 'none';
+      if (!moved) { updateOverlay(); return; } // 只是点了一下空白处
+      applySelection(picked, null);
+      fire('select', selId);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
     ev.preventDefault();
   }
 
   function startResize(ev, dir) {
     const e = Store.el(selId);
-    if (!e) return;
+    if (!e || e.type === 'group') return;
     const r = nodes.get(selId).getBoundingClientRect();
     Store.begin();
     drag = {
@@ -371,7 +558,20 @@ window.Canvas = (function () {
       sx: ev.clientX, sy: ev.clientY,
       ex: e.x, ey: e.y, ew: e.w, eh: r.height / view.z,
       ratio: r.width / r.height,
+      host: nodes.get(selId),
     };
+  }
+
+  function startMove(ev, ids) {
+    const moveIds = window.Groups ? Groups.expand(ids) : (ids || []);
+    const items = [];
+    moveIds.forEach((id) => {
+      const e = Store.el(id);
+      if (!e) return;
+      items.push({ id, x: e.x, y: e.y, n: nodes.get(id) });
+    });
+    if (!items.length) return;
+    drag = { mode: 'move', items, sx: ev.clientX, sy: ev.clientY, moved: false };
   }
 
   function onMove(ev) {
@@ -383,24 +583,27 @@ window.Canvas = (function () {
       applyView();
       return;
     }
-    if (drag.mode === 'marquee-ignore') {
-      if (Math.hypot(ev.clientX - drag.sx, ev.clientY - drag.sy) > 4) drag.mode = 'pan';
-      return;
-    }
 
     const dx = (ev.clientX - drag.sx) / view.z;
     const dy = (ev.clientY - drag.sy) / view.z;
 
     if (drag.mode === 'move') {
       if (!drag.moved && Math.hypot(ev.clientX - drag.sx, ev.clientY - drag.sy) < 3) return;
-      drag.moved = true;
-      const e = Store.el(drag.id);
-      if (!e) return;
-      const nx = Math.round(drag.ex + dx);
-      const ny = Math.round(drag.ey + dy);
-      e.x = nx; e.y = ny;
-      drag.host.style.left = nx + 'px';
-      drag.host.style.top = ny + 'px';
+      if (!drag.moved) {
+        drag.moved = true;
+        Store.begin();
+        drag.items.forEach((it) => { if (it.n) it.n.classList.add('moving'); });
+      }
+      drag.items.forEach((it) => {
+        const e = Store.el(it.id);
+        if (!e) return;
+        e.x = Math.round(it.x + dx);
+        e.y = Math.round(it.y + dy);
+        if (it.n) {
+          it.n.style.left = e.x + 'px';
+          it.n.style.top = e.y + 'px';
+        }
+      });
       updateOverlay();
       drawMini();
       return;
@@ -411,7 +614,7 @@ window.Canvas = (function () {
       if (!e) return;
       const d = drag.dir;
       let x = drag.ex, y = drag.ey, w = drag.ew, h = drag.eh;
-      const minW = e.type === 'flowchart' ? 320 : e.type === 'image' ? 180 : e.type === 'table' ? 300 : 220;
+      const minW = e.type === 'flowchart' ? 320 : e.type === 'image' ? 180 : e.type === 'table' ? 300 : e.type === 'state' ? 320 : 220;
       if (d.indexOf('e') > -1) w = drag.ew + dx;
       if (d.indexOf('w') > -1) { w = drag.ew - dx; x = drag.ex + dx; }
       if (d.indexOf('s') > -1) h = drag.eh + dy;
@@ -437,9 +640,18 @@ window.Canvas = (function () {
     const d = drag;
     drag = null;
     wrap.classList.remove('grabbing');
-    if (d.mode === 'move' || d.mode === 'resize') {
+    if (d.mode === 'move') {
+      if (d.items) d.items.forEach((it) => { if (it.n) it.n.classList.remove('moving'); });
+      if (d.moved) {
+        if (window.Groups) Groups.syncAll();
+        Store.end('layout');
+      }
+      return;
+    }
+    if (d.mode === 'resize') {
       Store.end('layout');
-      if (d.mode === 'resize' && d.id) rebuild(d.id);
+      if (d.id) rebuild(d.id);
+      if (window.Groups) Groups.syncAll();
     }
   }
 
@@ -448,7 +660,12 @@ window.Canvas = (function () {
     if (node.isContentEditable) return;
     const e = Store.el(host.dataset.id);
     if (!e) return;
-    editing = { host, node, id: e.id, field: node.dataset.edit };
+    editing = {
+      host, node, id: e.id, field: node.dataset.edit,
+      index: node.dataset.index == null ? null : +node.dataset.index,
+      coll: node.dataset.coll || null,
+      obj: node.dataset.obj || null,
+    };
     const plain = editing.field !== 'html';
     // 纯文本字段：用 textContent，避免把 <br> 等当作内容
     node.contentEditable = 'true';
@@ -484,7 +701,7 @@ window.Canvas = (function () {
 
   function finishEdit() {
     if (!editing) return;
-    const { node, id, field, host } = editing;
+    const { node, id, field, host, index, coll, obj } = editing;
     editing = null;
     const e = Store.el(id);
     if (!e) return;
@@ -497,12 +714,21 @@ window.Canvas = (function () {
     else val = (node.innerText || '').replace(/\s+\n/g, '\n').trim();
 
     Store.begin();
-    e[field] = val;
-    Store.end('edit');
-    if (field === 'html' || field === 'text' || field === 'title') {
-      // 内容可能改变高度 / 需要重排
-      rebuild(id);
+    if (field === '__list') {
+      if (!Array.isArray(e.items)) e.items = [];
+      if (index != null) e.items[index] = val;
+    } else if (coll && index != null) {
+      const arr = Array.isArray(e[coll]) ? e[coll] : (e[coll] = []);
+      if (arr[index]) arr[index][field] = val;
+    } else if (obj && e[obj]) {
+      e[obj][field] = val;
+    } else {
+      e[field] = val;
     }
+    Store.end('edit');
+    // 文字变化可能改变自动高度；所有组件都重建一次，分组边界也随内容适配
+    rebuild(id);
+    if (window.Groups) Groups.syncAll();
   }
 
   function sanitize(html) {
@@ -535,13 +761,13 @@ window.Canvas = (function () {
     const oy = pad + ((H - pad * 2) - b.h * z) / 2;
     const map = (x, y) => [ox + (x - b.x) * z, oy + (y - b.y) * z];
 
-    const colors = { flowchart: '#8E76E8', image: '#F08CB4', text: '#B7B2C9', note: '#E9B45E', heading: '#6E5BC0', table: '#6FA8DC' };
+    const colors = { flowchart: '#8E76E8', image: '#F08CB4', text: '#B7B2C9', note: '#E9B45E', heading: '#6E5BC0', table: '#6FA8DC', state: '#5FBFA8' };
     nodes.forEach((n, id) => {
       const e = Store.el(id); if (!e) return;
       const [x, y] = map(e.x, e.y);
       const w = Math.max(n.offsetWidth * z, 2), h = Math.max(n.offsetHeight * z, 2);
       ctx.fillStyle = colors[e.type] || '#ccc';
-      ctx.globalAlpha = id === selId ? 0.95 : 0.5;
+      ctx.globalAlpha = selIds.has(id) ? 0.95 : 0.5;
       if (e.type === 'heading') { ctx.fillRect(x, y, w, Math.min(h, 10)); }
       else ctx.fillRect(x, y, w, h);
     });
@@ -573,48 +799,14 @@ window.Canvas = (function () {
 
   /* ---------------- 新增元素 ---------------- */
   function defaults(type, x, y) {
-    const id = U.uid(type);
-    switch (type) {
-      case 'heading':
-        return { id, type, x, y, w: 720, level: 2, kicker: 'NEW / 小节', text: '新的小节标题' };
-      case 'text':
-        return { id, type, x, y, w: 560, html: '<p>在这里写下你的拆解……</p>', variant: 'body' };
-      case 'note':
-        return { id, type, x, y, w: 420, tone: 'idea', title: '标注标题', html: '<p>要点说明。</p>' };
-      case 'image':
-        return {
-          id, type, x, y, w: 560, h: 340, src: '', fit: 'contain', zoom: 1, ox: 0, oy: 0,
-          radius: 14, shadow: true, title: '截图', caption: '补充说明', marks: [],
-        };
-      case 'flowchart':
-        return { id, type, x, y, w: 520, title: '新流程图', nodes: FC.blank().nodes };
-      case 'table': {
-        const base = window.Tables ? Tables.blank() : { rows: [['维度', '表现', '判断'], ['', '', ''], ['', '', '']] };
-        return Object.assign(
-          { id, type, x, y, w: 620, title: '新表格', caption: '' },
-          base
-        );
-      }
-      default:
-        return { id, type: 'text', x, y, w: 480, html: '<p>新组件</p>' };
-    }
+    if (window.ComponentRegistry && ComponentRegistry.has(type)) return ComponentRegistry.create(type, x, y);
+    return { id: U.uid(type), type: 'text', x, y, w: 480, html: '<p>新组件</p>' };
   }
 
-  function addAtCenter(type) {
-    const r = wrap.getBoundingClientRect();
-    const c = s2w(r.left + r.width / 2, r.top + r.height / 2);
-    let x = Math.round(c.x - 240), y = Math.round(c.y - 160);
-    // 避让：若与已有元素重叠，向下偏移
-    for (let i = 0; i < 12; i++) {
-      const hit = [...nodes.values()].some((n) => {
-        const nx = parseFloat(n.style.left), ny = parseFloat(n.style.top);
-        return Math.abs(nx - x) < 40 && Math.abs(ny - y) < 40;
-      });
-      if (!hit) break;
-      y += 60;
-    }
-    const e = defaults(type, x, y);
+  function addAt(type, wx, wy) {
+    const e = defaults(type, Math.round(wx), Math.round(wy));
     Store.add(e);
+    if (type === 'group') Store.update(e.id, { z: 0 }, true);
     renderAll();
     select(e.id);
     if (type === 'text' || type === 'note') {
@@ -623,6 +815,29 @@ window.Canvas = (function () {
       if (ed) setTimeout(() => startEdit(n, ed), 30);
     }
     return e;
+  }
+
+  function addAtCenter(type) {
+    const r = wrap.getBoundingClientRect();
+    const c = s2w(r.left + r.width / 2, r.top + r.height / 2);
+    const meta = (window.ComponentRegistry && ComponentRegistry.get(type)) || {};
+    const w = meta.w || 240;
+    const h = meta.h || ({ heading: 110, text: 220, note: 160, image: 340, flowchart: 360, state: 420, table: 300, list: 190, quote: 170, divider: 80, metric: 120, rating: 110, source: 130 }[type] || 160);
+    // 先按组件真实尺寸算中心，再从中心向外找一个不压住已有组件的空位
+    const baseX = Math.round(c.x - w / 2), baseY = Math.round(c.y - h / 2);
+    const boxes = [...nodes.values()].map((n) => ({
+      x: parseFloat(n.style.left) || 0, y: parseFloat(n.style.top) || 0,
+      w: n.offsetWidth || 0, h: n.offsetHeight || 0,
+    }));
+    const tries = [[0, 0], [0, 1], [0, 2], [0, 3], [1, 0], [-1, 0], [1, 1], [-1, 1], [1, 2], [-1, 2], [1, 3], [-1, 3], [0, -1]];
+    let x = baseX, y = baseY;
+    for (const [dx, dy] of tries) {
+      x = baseX + dx * (w + 24);
+      y = baseY + dy * (h + 24);
+      const hit = boxes.some((b) => x < b.x + b.w + 14 && x + w > b.x - 14 && y < b.y + b.h + 14 && y + h > b.y - 14);
+      if (!hit) break;
+    }
+    return addAt(type, x, y);
   }
 
   function importImageFile(file, at) {
@@ -672,6 +887,11 @@ window.Canvas = (function () {
         return;
       }
       if (meta && ev.key.toLowerCase() === 'y') { ev.preventDefault(); Store.redo(); return; }
+      if (meta && ev.key.toLowerCase() === 'a') {
+        ev.preventDefault();
+        if (selIds.size) selectAll();
+        return;
+      }
       if (meta && ev.key.toLowerCase() === 'd' && id) {
         ev.preventDefault();
         const c = Store.duplicate(id);
@@ -703,35 +923,38 @@ window.Canvas = (function () {
         }
         return;
       }
-      if ((ev.key === 'Delete' || ev.key === 'Backspace') && id) {
+      if ((ev.key === 'Delete' || ev.key === 'Backspace') && selIds.size) {
         ev.preventDefault();
-        if (selNodeId) { Panels.deleteNode(); return; }
-        Store.remove(id);
-        renderAll();
-        select(null);
+        if (selNodeId && selIds.size === 1) { Panels.deleteNode(); return; }
+        removeSelection();
         return;
       }
       if (ev.key === 'Escape') { select(null); fire('edit', 'escape'); return; }
-      if (id && /^Arrow/.test(ev.key)) {
-        const e = Store.el(id); if (!e) return;
+      if (selIds.size && /^Arrow/.test(ev.key)) {
         ev.preventDefault();
         const step = ev.shiftKey ? 40 : 4;
         Store.begin();
-        if (ev.key === 'ArrowLeft') e.x -= step;
-        if (ev.key === 'ArrowRight') e.x += step;
-        if (ev.key === 'ArrowUp') e.y -= step;
-        if (ev.key === 'ArrowDown') e.y += step;
+        selIds.forEach((sid) => {
+          const e = Store.el(sid);
+          if (!e) return;
+          if (ev.key === 'ArrowLeft') e.x -= step;
+          if (ev.key === 'ArrowRight') e.x += step;
+          if (ev.key === 'ArrowUp') e.y -= step;
+          if (ev.key === 'ArrowDown') e.y += step;
+          const n = nodes.get(sid);
+          if (n) { n.style.left = e.x + 'px'; n.style.top = e.y + 'px'; }
+        });
         Store.end('nudge');
-        const n = nodes.get(id);
-        if (n) { n.style.left = e.x + 'px'; n.style.top = e.y + 'px'; }
         updateOverlay();
+        drawMini();
       }
     });
   }
 
   return {
-    init, on, applyView, fit, home, zoomBy, focus, select, getSel, getSelNode,
-    renderAll, rebuild, updateOverlay, addAtCenter, setImageSrc, importImageFile, openEditor,
+    init, on, applyView, fit, home, zoomBy, focus, select, selectMany, getSel, getSelNode, getSelIds,
+    selectAll, removeSelection, toggleSelect,
+    renderAll, rebuild, updateOverlay, addAt, addAtCenter, setImageSrc, importImageFile, openEditor,
     bindKeys, miniJump, contentBounds,
     get view() { return view; },
     startEditById(id) {

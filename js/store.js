@@ -393,7 +393,26 @@ window.Store = (function () {
       });
     }
     if (c.type === 'image' && c.annotations) c.annotations = c.annotations.map((a) => ({ ...a, id: U.uid('an') }));
-    c.z = nextZ();
+    if (c.type === 'state' && Array.isArray(c.nodes)) {
+      const map = {};
+      c.nodes.forEach((n) => { map[n.id] = U.uid('s'); });
+      c.nodes.forEach((n) => { n.id = map[n.id]; });
+      if (Array.isArray(c.edges)) {
+        c.edges.forEach((e) => {
+          e.id = U.uid('e');
+          e.from = map[e.from] || e.from;
+          e.to = map[e.to] || e.to;
+        });
+      }
+    }
+    if (c.type === 'group') {
+      // 分组框复制为新的空分组，避免两个分组同时控制同一批子组件
+      c.members = [];
+      c.title = (c.title || '系统分组') + ' 副本';
+      c.z = 0;
+    } else {
+      c.z = nextZ();
+    }
     doc.elements.push(c);
     end('duplicate');
     return c;
@@ -721,6 +740,32 @@ window.Store = (function () {
         '② 让界面承担教学：空态、提示、进度条三件套，比一次性弹窗更持久。<br>' +
         '③ 循环必须有「回到起点」的钩子：每次解锁都要让玩家看见新的、够得着的目标。</blockquote>' +
         '<p class="dim">本册为面试用拆解样本，界面截图与系统表述以实机为准；数值与概率部分留待补充。</p>',
+    });
+
+    /* ---------- 05 状态图（一轮体验里的玩家状态机） ---------- */
+    const sdY = y4 + 400;
+    const sInit = U.uid('s'), sIdle = U.uid('s'), sMove = U.uid('s'), sAct = U.uid('s'), sEdit = U.uid('s'), sBack = U.uid('s');
+    add({
+      id: U.uid('sd'), type: 'state', x: AX, y: sdY, w: 1000,
+      title: '一轮体验里的玩家状态机',
+      caption: '状态之间怎么迁移，就决定了系统每一步给玩家的「下一步做什么」。',
+      nodes: [
+        { id: sInit, name: '', note: '', kind: 'initial', x: 0, y: 66 },
+        { id: sIdle, name: '待机', note: '自由探索', kind: 'state', x: 70, y: 40 },
+        { id: sMove, name: '移动中', note: '镜头跟随 · 摇杆输入', kind: 'state', x: 300, y: 40 },
+        { id: sAct, name: '交互 / 采集', note: '触发引导与产出', kind: 'state', x: 530, y: 40 },
+        { id: sEdit, name: '换装编辑', note: '审美消费入口', kind: 'state', x: 760, y: 40 },
+        { id: sBack, name: '回到起点', note: '循环闭合', kind: 'state', x: 300, y: 190 },
+      ],
+      edges: [
+        { id: U.uid('e'), from: sInit, to: sIdle, label: '进入场景' },
+        { id: U.uid('e'), from: sIdle, to: sMove, label: '摇杆输入' },
+        { id: U.uid('e'), from: sMove, to: sIdle, label: '停止输入' },
+        { id: U.uid('e'), from: sMove, to: sAct, label: '靠近目标' },
+        { id: U.uid('e'), from: sAct, to: sEdit, label: '获得图纸' },
+        { id: U.uid('e'), from: sEdit, to: sBack, label: '保存搭配' },
+        { id: U.uid('e'), from: sBack, to: sIdle, label: '退出编辑' },
+      ],
     });
 
     return { version: 2, title: '无限暖暖 · 系统拆解示例', boardName: '总览', elements: els, cover: cover.id };

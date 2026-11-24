@@ -138,6 +138,18 @@
   --fc-arrow: #A99BE0;
   --fc-shadow: #4A2C86;
 
+
+  /* ---------- 状态图 ---------- */
+  --st-fill: var(--surface);
+  --st-stroke: var(--line-3);
+  --st-initial: var(--violet);
+  --st-final: var(--violet-d);
+  --st-text: var(--ink-deep);
+  --st-text-note: var(--muted);
+  --st-edge: var(--violet-edge);
+  --st-chip-bg: var(--violet-soft);
+  --st-chip-ink: var(--violet-d);
+
   /* ---------- 阴影 ---------- */
   --shadow-s: 0 1px 2px rgba(58, 36, 110, .05), 0 4px 14px rgba(58, 36, 110, .05);
   --shadow-m: 0 2px 6px rgba(58, 36, 110, .06), 0 14px 40px rgba(58, 36, 110, .09);

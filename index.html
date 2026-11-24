@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>析境 · 可视化拆解工作台</title>
+<link rel="icon" type="image/x-icon" href="icon.ico?v=80">
 <meta name="theme-color" content="#F6F3FC">
 <script>
 /* 生效主题要在首帧前落到 <html>，避免闪白 */
@@ -15,8 +16,8 @@
   } catch (e) { document.documentElement.dataset.theme = 'snow'; }
 })();
 </script>
-<link rel="stylesheet" href="css/theme.css?v=48">
-<link rel="stylesheet" href="css/app.css?v=48">
+<link rel="stylesheet" href="css/theme.css?v=80">
+<link rel="stylesheet" href="css/app.css?v=80">
 </head>
 <body>
 
@@ -33,14 +34,13 @@
     </div>
   </div>
 
-  <div class="addbar">
-    <span class="addbar-l">添加组件</span>
-    <button class="addbtn" data-add="heading"><i class="dot d-heading"></i>标题</button>
-    <button class="addbtn" data-add="text"><i class="dot d-text"></i>文字</button>
-    <button class="addbtn" data-add="note"><i class="dot d-note"></i>标注</button>
-    <button class="addbtn" data-add="image"><i class="dot d-image"></i>图片</button>
-    <button class="addbtn" data-add="flowchart"><i class="dot d-flowchart"></i>流程图</button>
-    <button class="addbtn" data-add="table"><i class="dot d-table"></i>表格</button>
+  <div class="addslot">
+    <button class="addcomp" id="btn-add-component" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="component-library" title="打开组件库（Ctrl/⌘ + K）">
+      <svg class="addcomp-plus" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+      <span>添加组件</span>
+      <svg class="addcomp-chev" viewBox="0 0 12 12" fill="none"><path d="M3 4.5l3 3 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <div class="clib" id="component-library" role="dialog" aria-label="组件库" hidden></div>
   </div>
 
   <div class="tools">
@@ -124,7 +124,7 @@
     <div class="world" id="world"></div>
     <div class="sel-overlay" id="sel-overlay"></div>
     <div class="corner-hint">
-      <kbd>空格</kbd>拖动 · <kbd>Ctrl</kbd><kbd>滚轮</kbd>缩放 · <kbd>双击</kbd>编辑
+      <kbd>左键</kbd>拖拽框选 · <kbd>空格</kbd>拖动 · <kbd>Ctrl</kbd><kbd>滚轮</kbd>缩放 · <kbd>双击</kbd>编辑
     </div>
     <div class="minimap">
       <canvas id="minimap-canvas"></canvas>
@@ -153,23 +153,31 @@
 
 <div id="toast" class="toast"></div>
 
-<script src="js/util.js?v=48"></script>
-<script src="js/theme.js?v=48"></script>
-<script src="js/nkformat.js?v=48"></script>
-<script src="js/files.js?v=48"></script>
-<script src="js/flowchart.js?v=48"></script>
-<script src="js/store.js?v=48"></script>
-<script src="js/marks.js?v=48"></script>
-<script src="js/tables.js?v=48"></script>
-<script src="js/render.js?v=48"></script>
-<script src="js/canvas.js?v=48"></script>
-<script src="js/boards.js?v=48"></script>
-<script src="js/panels.js?v=48"></script>
-<script src="js/floweditor.js?v=48"></script>
-<script src="js/imgeditor.js?v=48"></script>
-<script src="js/texteditor.js?v=48"></script>
-<script src="js/tableeditor.js?v=48"></script>
-<script src="js/newdoc.js?v=48"></script>
-<script src="js/app.js?v=48"></script>
+<script src="js/util.js?v=80"></script>
+<script src="js/theme.js?v=80"></script>
+<script src="js/nkformat.js?v=80"></script>
+<script src="js/files.js?v=80"></script>
+<script src="js/flowchart.js?v=80"></script>
+<script src="js/statediagram.js?v=80"></script>
+<script src="js/store.js?v=80"></script>
+<script src="js/marks.js?v=80"></script>
+<script src="js/tables.js?v=80"></script>
+<script src="js/component-registry.js?v=80"></script>
+<script src="js/advanced-components.js?v=80"></script>
+<script src="js/groups.js?v=80"></script>
+<script src="js/render.js?v=80"></script>
+<script src="js/canvas.js?v=80"></script>
+<script src="js/boards.js?v=80"></script>
+<script src="js/panels.js?v=80"></script>
+<script src="js/component-library.js?v=80"></script>
+<script src="js/floweditor.js?v=80"></script>
+<script src="js/stateeditor.js?v=80"></script>
+<script src="js/imgeditor.js?v=80"></script>
+<script src="js/texteditor.js?v=80"></script>
+<script src="js/tableeditor.js?v=80"></script>
+<script src="js/cardeditor.js?v=80"></script>
+<script src="js/advanced-editor.js?v=80"></script>
+<script src="js/newdoc.js?v=80"></script>
+<script src="js/app.js?v=80"></script>
 </body>
 </html>

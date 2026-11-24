@@ -40,6 +40,7 @@
     });
 
     bindToolbar();
+    if (window.ComponentLibrary) ComponentLibrary.init();
     bindSaveSystem();
     bindGlobal();
     refreshSaveUI();
@@ -171,19 +172,6 @@
 
   /* ================= 工具栏 ================= */
   function bindToolbar() {
-    document.querySelectorAll('[data-add]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const t = btn.dataset.add;
-        if (t === 'image') {
-          const inp = $('#file-image');
-          inp.dataset.mode = 'new';
-          inp.click();
-        } else {
-          Canvas.addAtCenter(t);
-        }
-      });
-    });
-
     $('#zoom-in').addEventListener('click', () => Canvas.zoomBy(1.15));
     $('#zoom-out').addEventListener('click', () => Canvas.zoomBy(1 / 1.15));
     $('#zoom-label').addEventListener('click', () => Canvas.zoomBy(1 / Canvas.view.z));
