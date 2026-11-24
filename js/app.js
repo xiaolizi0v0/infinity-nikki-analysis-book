@@ -219,6 +219,7 @@
     $('#menu-open-file').addEventListener('click', () => { openFromDevice(); closeMenu(); });
     $('#menu-export-nk').addEventListener('click', () => { exportPacked(); closeMenu(); });
     $('#menu-export').addEventListener('click', () => { exportJson(); closeMenu(); });
+    $('#menu-export-md').addEventListener('click', () => { exportMarkdown(); closeMenu(); });
     $('#menu-unlink').addEventListener('click', () => {
       Files.forget();
       updateFileChip(null);
@@ -316,6 +317,27 @@
     U.download(name, JSON.stringify(doc, null, 2));
     Store.flush();
     U.toast('已导出 JSON（旧格式，可再次导入继续编辑）');
+  }
+
+  // 面向 AI 阅读 / 学习的 Markdown：按页与阅读顺序重排，去掉画布坐标
+  function exportMarkdown() {
+    const doc = Store.get();
+    if (!window.MDExport || typeof MDExport.build !== 'function') {
+      U.toast('Markdown 导出模块未加载，请刷新页面后重试');
+      return;
+    }
+    try {
+      const stats = MDExport.stats(doc);
+      const d = new Date();
+      const stamp = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
+      const text = MDExport.build(doc);
+      const name = slug(doc) + '-' + stamp + '.md';
+      U.download(name, text, 'text/markdown;charset=utf-8');
+      Store.flush();
+      U.toast('已导出 Markdown 学习资料（' + stats.boards + ' 页 / ' + stats.components + ' 个组件）');
+    } catch (e) {
+      U.toast('导出 Markdown 失败：' + e.message);
+    }
   }
 
   /* ================= 设备文件（自选目录） ================= */

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>析境 · 可视化拆解工作台</title>
-<link rel="icon" type="image/x-icon" href="icon.ico?v=80">
+<link rel="icon" type="image/x-icon" href="icon.ico?v=81">
 <meta name="theme-color" content="#F6F3FC">
 <script>
 /* 生效主题要在首帧前落到 <html>，避免闪白 */
@@ -16,8 +16,8 @@
   } catch (e) { document.documentElement.dataset.theme = 'snow'; }
 })();
 </script>
-<link rel="stylesheet" href="css/theme.css?v=80">
-<link rel="stylesheet" href="css/app.css?v=80">
+<link rel="stylesheet" href="css/theme.css?v=81">
+<link rel="stylesheet" href="css/app.css?v=81">
 </head>
 <body>
 
@@ -91,6 +91,7 @@
       <button id="menu-open-file"><span>打开 .nkdraw / .json…</span></button>
       <button id="menu-export-nk"><span>导出 .nkdraw 文件</span><kbd>Ctrl E</kbd></button>
       <button id="menu-export"><span>导出 JSON（旧格式）</span></button>
+      <button id="menu-export-md"><span>导出 Markdown（AI 阅读资料）</span></button>
       <button id="menu-unlink"><span>取消文件关联</span></button>
       <button id="menu-print"><span>打印当前视图</span></button>
       <div class="menu-sep"></div>
@@ -153,31 +154,32 @@
 
 <div id="toast" class="toast"></div>
 
-<script src="js/util.js?v=80"></script>
-<script src="js/theme.js?v=80"></script>
-<script src="js/nkformat.js?v=80"></script>
-<script src="js/files.js?v=80"></script>
-<script src="js/flowchart.js?v=80"></script>
-<script src="js/statediagram.js?v=80"></script>
-<script src="js/store.js?v=80"></script>
-<script src="js/marks.js?v=80"></script>
-<script src="js/tables.js?v=80"></script>
-<script src="js/component-registry.js?v=80"></script>
-<script src="js/advanced-components.js?v=80"></script>
-<script src="js/groups.js?v=80"></script>
-<script src="js/render.js?v=80"></script>
-<script src="js/canvas.js?v=80"></script>
-<script src="js/boards.js?v=80"></script>
-<script src="js/panels.js?v=80"></script>
-<script src="js/component-library.js?v=80"></script>
-<script src="js/floweditor.js?v=80"></script>
-<script src="js/stateeditor.js?v=80"></script>
-<script src="js/imgeditor.js?v=80"></script>
-<script src="js/texteditor.js?v=80"></script>
-<script src="js/tableeditor.js?v=80"></script>
-<script src="js/cardeditor.js?v=80"></script>
-<script src="js/advanced-editor.js?v=80"></script>
-<script src="js/newdoc.js?v=80"></script>
-<script src="js/app.js?v=80"></script>
+<script src="js/util.js?v=81"></script>
+<script src="js/theme.js?v=81"></script>
+<script src="js/nkformat.js?v=81"></script>
+<script src="js/files.js?v=81"></script>
+<script src="js/flowchart.js?v=81"></script>
+<script src="js/statediagram.js?v=81"></script>
+<script src="js/store.js?v=81"></script>
+<script src="js/marks.js?v=81"></script>
+<script src="js/tables.js?v=81"></script>
+<script src="js/component-registry.js?v=81"></script>
+<script src="js/advanced-components.js?v=81"></script>
+<script src="js/groups.js?v=81"></script>
+<script src="js/render.js?v=81"></script>
+<script src="js/canvas.js?v=81"></script>
+<script src="js/boards.js?v=81"></script>
+<script src="js/panels.js?v=81"></script>
+<script src="js/component-library.js?v=81"></script>
+<script src="js/floweditor.js?v=81"></script>
+<script src="js/stateeditor.js?v=81"></script>
+<script src="js/imgeditor.js?v=81"></script>
+<script src="js/texteditor.js?v=81"></script>
+<script src="js/tableeditor.js?v=81"></script>
+<script src="js/cardeditor.js?v=81"></script>
+<script src="js/advanced-editor.js?v=81"></script>
+<script src="js/mdexport.js?v=81"></script>
+<script src="js/newdoc.js?v=81"></script>
+<script src="js/app.js?v=81"></script>
 </body>
 </html>
