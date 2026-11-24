@@ -140,6 +140,11 @@ window.ComponentRegistry = (function () {
       icon: '<rect x="2.2" y="2.2" width="11.6" height="11.6" rx="1.3" stroke="currentColor" stroke-width="1.1"/><path d="M8 2.2v11.6M2.2 8h11.6" stroke="currentColor" stroke-width=".9" stroke-dasharray="2 2"/><circle cx="10.8" cy="5" r="1.4" fill="currentColor"/><circle cx="5.2" cy="10.8" r="1.2" fill="currentColor"/>',
     },
     {
+      type: 'er', label: 'E-R 图', category: 'structure', w: 760,
+      desc: '实体、属性与关系基数', keywords: ['E-R', 'ER', 'ER图', '实体关系', '实体', '属性', '关系', '数据库', 'er'],
+      icon: '<rect x="1.8" y="2.2" width="4.6" height="3.6" rx="1" stroke="currentColor" stroke-width="1.1"/><rect x="9.6" y="2.2" width="4.6" height="3.6" rx="1" stroke="currentColor" stroke-width="1.1"/><rect x="5.7" y="10" width="4.6" height="3.6" rx="1" stroke="currentColor" stroke-width="1.1"/><path d="M6.4 4h3.2M4.2 5.8v2.4h4.8v1.8M11.8 5.8v2.4H8.1v1.8" stroke="currentColor" stroke-width="1" fill="none"/>',
+    },
+    {
       type: 'compare', label: '对比卡', category: 'structure', w: 760, h: 330,
       desc: '方案、竞品与改前改后对照', keywords: ['对比', '对照', '方案', '竞品', '前后', 'compare', 'vs'],
       icon: '<rect x="1.8" y="3.2" width="5.2" height="9.6" rx="1.2" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="3.2" width="5.2" height="9.6" rx="1.2" stroke="currentColor" stroke-width="1.2"/><path d="M7.2 8h1.6M7.9 6.9l1.1 1.1-1.1 1.1" stroke="currentColor" stroke-width="1.1" fill="none"/>',
@@ -278,6 +283,29 @@ window.ComponentRegistry = (function () {
             { label: '换装拍照', x: 72, y: 38, tone: 'violet' },
             { label: '联机社交', x: 58, y: 76, tone: 'amber' },
             { label: '轻量收集', x: 38, y: 28, tone: 'mint' },
+          ],
+        };
+      case 'er':
+        return {
+          id, type, x, y, w: 760, title: '无限暖暖系统 E-R 图', tone: 'violet',
+          entities: [
+            {
+              id: 'e1', name: '玩家', x: 3, y: 4,
+              fields: [{ name: 'player_id', key: 'PK' }, { name: '昵称', key: '' }, { name: '探索进度', key: '' }],
+            },
+            {
+              id: 'e2', name: '服装', x: 66, y: 3,
+              fields: [{ name: 'outfit_id', key: 'PK' }, { name: '名称', key: '' }, { name: '能力', key: 'FK' }],
+            },
+            {
+              id: 'e3', name: '关卡', x: 36, y: 52,
+              fields: [{ name: 'level_id', key: 'PK' }, { name: '目标', key: '' }, { name: '奖励', key: '' }],
+            },
+          ],
+          relations: [
+            { id: 'r1', from: 'e1', to: 'e2', label: '拥有', card: '1:N' },
+            { id: 'r2', from: 'e2', to: 'e3', label: '用于', card: 'N:M' },
+            { id: 'r3', from: 'e1', to: 'e3', label: '挑战', card: '1:N' },
           ],
         };
       case 'compare':

@@ -277,6 +277,154 @@ window.AdvancedComponents = (function () {
     );
   }
 
+  /* ---------------- E-R 图 ---------------- */
+  function erList(e) {
+    return Array.isArray(e.entities) ? e.entities.filter(Boolean) : [];
+  }
+
+  function erRelationList(e) {
+    return Array.isArray(e.relations) ? e.relations.filter(Boolean) : [];
+  }
+
+  function erCardParts(card) {
+    const parts = String(card || '1:N').split(':');
+    return [parts[0] || '1', parts[1] || 'N'];
+  }
+
+  function erEntity(item, i) {
+    const fields = Array.isArray(item.fields) ? item.fields.filter(Boolean) : [];
+    return (
+      `<div class="er-entity" data-er-entity-id="${E(item.id || ('e' + (i + 1)))}" data-er-entity-index="${i}" style="left:${(Number(item.x) || 0).toFixed(2)}%;top:${(Number(item.y) || 0).toFixed(2)}%">` +
+      `<div class="er-entity-head">` +
+      `<span class="er-entity-kind">ENTITY ${String(i + 1).padStart(2, '0')}</span>` +
+      `<div class="er-entity-name" data-er-edit="entities.${i}.name">${E(item.name || '未命名实体')}</div>` +
+      `</div>` +
+      `<div class="er-fields">` +
+      (fields.length
+        ? fields.map((fld, j) =>
+            `<div class="er-field">` +
+            `<span class="er-field-key${fld.key ? ' has-key' : ''}" data-er-edit="entities.${i}.fields.${j}.key">${E(fld.key || '')}</span>` +
+            `<div class="er-field-name" data-er-edit="entities.${i}.fields.${j}.name">${E(fld.name || '')}</div>` +
+            `</div>`
+          ).join('')
+        : `<div class="er-field-empty">暂无字段</div>`) +
+      `</div>` +
+      `</div>`
+    );
+  }
+
+  function erCard(e) {
+    const entities = erList(e);
+    const relations = erRelationList(e);
+    return (
+      `<div class="adv-card er-card tone-${tone(e, 'violet')}">` +
+      head('E-R', e.title || '系统 E-R 图', `${entities.length} 实体 · ${relations.length} 关系`) +
+      `<div class="er-stage">` +
+      `<div class="er-board" data-er-board>` +
+      `<svg class="er-wires" aria-hidden="true">` +
+      relations.map((r, i) =>
+        `<path class="er-line" data-er-line="${i}" data-from="${E(r.from || '')}" data-to="${E(r.to || '')}" d=""/>`
+      ).join('') +
+      `</svg>` +
+      relations.map((r, i) => {
+        const [fromCard, toCard] = erCardParts(r.card);
+        return `<div class="er-rel" data-er-rel-index="${i}" data-er-edit="relations.${i}.label">${E(r.label || '关联')}</div>` +
+          `<span class="er-end is-from" data-er-end-from="${i}">${E(fromCard)}</span>` +
+          `<span class="er-end is-to" data-er-end-to="${i}">${E(toCard)}</span>`;
+      }).join('') +
+      entities.map(erEntity).join('') +
+      (entities.length ? '' : empty('还没有实体。点上方「＋ 添加实体」开始画关系。')) +
+      `</div>` +
+      `</div>` +
+      `</div>`
+    );
+  }
+
+  function erPoint(p0, p1, p2, p3, t) {
+    const u = 1 - t;
+    return {
+      x: u * u * u * p0.x + 3 * u * u * t * p1.x + 3 * u * t * t * p2.x + t * t * t * p3.x,
+      y: u * u * u * p0.y + 3 * u * u * t * p1.y + 3 * u * t * t * p2.y + t * t * t * p3.y,
+    };
+  }
+
+  function layoutEr(root) {
+    const host = root && root.querySelectorAll ? root : document;
+    host.querySelectorAll('[data-er-board]').forEach((board) => {
+      const br = board.getBoundingClientRect();
+      if (!br.width || !br.height) return;
+      const bw = board.offsetWidth || br.width;
+      const bh = board.offsetHeight || br.height;
+      const sx = br.width / bw;
+      const sy = br.height / bh;
+      const cards = {};
+      board.querySelectorAll('[data-er-entity-id]').forEach((card) => {
+        const r = card.getBoundingClientRect();
+        const left = (r.left - br.left) / sx;
+        const top = (r.top - br.top) / sy;
+        cards[card.dataset.erEntityId] = {
+          cx: left + (r.width / sx) / 2,
+          cy: top + (r.height / sy) / 2,
+          w: r.width / sx,
+          h: r.height / sy,
+        };
+      });
+      const edgePoint = (card, tx, ty) => {
+        const dx = tx - card.cx;
+        const dy = ty - card.cy;
+        const nx = Math.abs(dx) / (card.w / 2 || 1);
+        const ny = Math.abs(dy) / (card.h / 2 || 1);
+        if (nx >= ny) return { x: dx >= 0 ? card.cx + card.w / 2 : card.cx - card.w / 2, y: card.cy };
+        return { x: card.cx, y: dy >= 0 ? card.cy + card.h / 2 : card.cy - card.h / 2 };
+      };
+      board.querySelectorAll('.er-line[data-er-line]').forEach((path) => {
+        const i = path.dataset.erLine;
+        const a = cards[path.dataset.from];
+        const b = cards[path.dataset.to];
+        const rel = board.querySelector(`.er-rel[data-er-rel-index="${i}"]`);
+        const ends = [
+          board.querySelector(`.er-end[data-er-end-from="${i}"]`),
+          board.querySelector(`.er-end[data-er-end-to="${i}"]`),
+        ];
+        if (!a || !b || a === b) {
+          path.removeAttribute('d');
+          if (rel) rel.style.display = 'none';
+          ends.forEach((x) => { if (x) x.style.display = 'none'; });
+          return;
+        }
+        const p0 = edgePoint(a, b.cx, b.cy);
+        const p3 = edgePoint(b, a.cx, a.cy);
+        const dx = p3.x - p0.x;
+        const dy = p3.y - p0.y;
+        const p1 = { x: p0.x + dx * .34, y: p0.y + dy * .18 };
+        const p2 = { x: p0.x + dx * .66, y: p0.y + dy * .82 };
+        path.setAttribute('d', `M${p0.x.toFixed(1)} ${p0.y.toFixed(1)}C${p1.x.toFixed(1)} ${p1.y.toFixed(1)} ${p2.x.toFixed(1)} ${p2.y.toFixed(1)} ${p3.x.toFixed(1)} ${p3.y.toFixed(1)}`);
+        const mid = erPoint(p0, p1, p2, p3, .5);
+        if (rel) {
+          rel.style.display = '';
+          rel.style.left = (mid.x / bw * 100).toFixed(2) + '%';
+          rel.style.top = (mid.y / bh * 100).toFixed(2) + '%';
+        }
+        const len = Math.hypot(dx, dy) || 1;
+        const ux = dx / len;
+        const uy = dy / len;
+        const gap = Math.min(20, Math.max(13, len * .28));
+        const tagPoints = [
+          { x: p0.x + ux * gap, y: p0.y + uy * gap },
+          { x: p3.x - ux * gap, y: p3.y - uy * gap },
+        ];
+        tagPoints.forEach((p, k) => {
+          const end = ends[k];
+          if (end) {
+            end.style.display = '';
+            end.style.left = (p.x / bw * 100).toFixed(2) + '%';
+            end.style.top = (p.y / bh * 100).toFixed(2) + '%';
+          }
+        });
+      });
+    });
+  }
+
   /* ---------------- 分组框外壳 ---------------- */
   function group(e) {
     const n = (Array.isArray(e.members) ? e.members : []).filter((id) => window.Store && Store.el(id)).length;
@@ -297,6 +445,7 @@ window.AdvancedComponents = (function () {
       case 'cycle': return cycle(e);
       case 'hierarchy': return hierarchy(e);
       case 'matrix': return matrix(e);
+      case 'er': return erCard(e);
       case 'compare': return compare(e);
       case 'columns': return columns(e);
       case 'video': return video(e);
@@ -306,5 +455,5 @@ window.AdvancedComponents = (function () {
     }
   }
 
-  return { render, SEM };
+  return { render, layout: layoutEr, SEM };
 })();

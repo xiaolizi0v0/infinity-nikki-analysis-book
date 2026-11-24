@@ -13,6 +13,7 @@ window.AdvancedEditor = (function () {
     cycle: '循环图',
     hierarchy: '层级图',
     matrix: '矩阵',
+    er: 'E-R 图',
     compare: '对比卡',
     group: '分组框',
     columns: '分栏',
@@ -24,6 +25,7 @@ window.AdvancedEditor = (function () {
     cycle: '拖动节点环绕中心调整顺序；点节点文字改标签与说明。',
     hierarchy: '点每层的文字直接改；拖层条或 ↑↓ 调整上下关系。',
     matrix: '拖圆点改变 X / Y 位置；点标签、象限和轴标题直接改。',
+    er: '拖实体卡调整位置；点实体名、字段和关系标签直接改；底部关系条可改端点与基数。',
     compare: '点 A / B 两栏的标题和正文直接改写，底部结论也能直接编辑。',
     group: '分组框里的成员卡可直接移出；标题和强调色在卡片上改。',
     columns: '点每栏标题和正文直接改；上方切换两栏 / 三栏。',
@@ -40,6 +42,7 @@ window.AdvancedEditor = (function () {
   ];
   const NODE_MAX = { timeline: 6, cycle: 6, hierarchy: 5, matrix: 10 };
   const NODE_MIN = { timeline: 3, cycle: 3, hierarchy: 2, matrix: 1 };
+  const ER_MAX = { entities: 6, relations: 10, fields: 8 };
 
   let ov = null;
   let cur = null;
@@ -49,7 +52,7 @@ window.AdvancedEditor = (function () {
   let fileEl = null;
   let drag = null;
 
-  const can = (type) => !!TYPE[type];
+  const can = (type) => !!TYPE[type] && type !== 'er';
   const isOpen = () => !!ov;
   const clone = (x) => JSON.parse(JSON.stringify(x));
   const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
@@ -99,6 +102,12 @@ window.AdvancedEditor = (function () {
     } else if (t === 'matrix') {
       tools = toneButtons(toneOf(draft, 'blue')) +
         addBtn('points', '添加点位', (draft.points || []).length >= NODE_MAX.matrix);
+    } else if (t === 'er') {
+      const ents = Array.isArray(draft.entities) ? draft.entities : [];
+      const rels = Array.isArray(draft.relations) ? draft.relations : [];
+      tools = toneButtons(toneOf(draft, 'violet')) +
+        addBtn('entities', '添加实体', ents.length >= ER_MAX.entities) +
+        addBtn('relations', '添加关系', ents.length < 2 || rels.length >= ER_MAX.relations);
     } else if (t === 'compare') {
       tools = toneButtons(toneOf(draft, 'blue'));
     } else if (t === 'columns') {
@@ -148,6 +157,9 @@ window.AdvancedEditor = (function () {
   }
   function groupScene() {
     return `<div class="ae-live-card type-group">${Renderer.inner(draft)}</div>`;
+  }
+  function erScene() {
+    return `<div class="ae-live-card type-er">${Renderer.inner(draft)}</div>`;
   }
 
   function polar(cx, cy, r, deg) {
@@ -249,6 +261,7 @@ window.AdvancedEditor = (function () {
   function scene() {
     if (draft.type === 'cycle') return cycleScene();
     if (draft.type === 'matrix') return matrixScene();
+    if (draft.type === 'er') return erScene();
     if (draft.type === 'timeline') return timelineScene();
     if (draft.type === 'hierarchy') return hierarchyScene();
     if (draft.type === 'compare') return compareScene();
@@ -264,6 +277,7 @@ window.AdvancedEditor = (function () {
       return `${(draft.nodes || []).length} ${draft.type === 'hierarchy' ? '层' : '节点'}`;
     }
     if (draft.type === 'matrix') return `${(draft.points || []).length} 点`;
+    if (draft.type === 'er') return `${(draft.entities || []).length} 实体 · ${(draft.relations || []).length} 关系`;
     if (draft.type === 'compare') return 'A/B 两栏';
     if (draft.type === 'columns') return `${(draft.cols || []).length || 2} 栏`;
     if (draft.type === 'video') return /^data:/i.test(draft.src || '') ? '本地媒体' : (draft.src ? '外部 URL' : '未选媒体');
@@ -286,6 +300,7 @@ window.AdvancedEditor = (function () {
     }
     decorate();
     wireEditable();
+    if (window.AdvancedComponents && AdvancedComponents.layout) AdvancedComponents.layout(prevEl);
     refreshCount();
   }
 
@@ -342,6 +357,53 @@ window.AdvancedEditor = (function () {
       : `<div class="ae-grp-empty">空分组 · 关闭窗口后多选组件，再点「组合为分组框」加入成员</div>`;
   }
 
+  function decorateER() {
+    if (draft.type !== 'er') return;
+    const ents = Array.isArray(draft.entities) ? draft.entities : [];
+    const rels = Array.isArray(draft.relations) ? draft.relations : [];
+    ents.forEach((item, i) => {
+      const node = prevEl.querySelector(`.er-entity[data-er-entity-index="${i}"]`);
+      if (!node) return;
+      const head = node.querySelector('.er-entity-head');
+      if (head) {
+        head.insertAdjacentHTML('afterbegin', `<button type="button" class="ae-er-drag" data-er-drag="${i}" title="拖动实体">⠿</button>`);
+        head.insertAdjacentHTML('beforeend', `<button type="button" class="ae-er-del" data-er-entity-del="${i}" title="删除实体">×</button>`);
+      }
+      const fields = node.querySelector('.er-fields');
+      if (fields) fields.insertAdjacentHTML('beforeend', `<button type="button" class="ae-er-addfield" data-er-field-add="${i}">＋ 字段</button>`);
+      node.querySelectorAll('.er-field').forEach((row, j) => {
+        row.insertAdjacentHTML('beforeend', `<button type="button" class="ae-er-fielddel" data-er-field-del="${i}:${j}" title="删除字段">×</button>`);
+      });
+    });
+    const card = prevEl.querySelector('.er-card');
+    if (!card) return;
+    card.insertAdjacentHTML('beforeend', erRelBar(ents, rels));
+  }
+
+  function erOptions(list, selected) {
+    return list.map((item, i) =>
+      `<option value="${E(item.id || ('e' + (i + 1)))}"${item.id === selected ? ' selected' : ''}>${E(item.name || ('实体 ' + (i + 1)))}</option>`
+    ).join('');
+  }
+
+  function erRelBar(ents, rels) {
+    return `<div class="ae-er-relbar">` +
+      `<div class="ae-er-relhead"><b>关系</b><span>${rels.length ? `${rels.length} 条 · 点关系标签直接改名` : '还没有关系'}</span></div>` +
+      (rels.length
+        ? `<div class="ae-er-relrows">` + rels.map((r, i) =>
+            `<div class="ae-er-relrow">` +
+            `<select data-er-rel-from="${i}" title="起点实体">${erOptions(ents, r.from)}</select>` +
+            `<span class="ae-er-relname" data-er-edit="relations.${i}.label" contenteditable="true" spellcheck="false" title="直接改关系名">${E(r.label || '关联')}</span>` +
+            `<select data-er-rel-to="${i}" title="终点实体">${erOptions(ents, r.to)}</select>` +
+            `<select class="ae-er-card" data-er-rel-card="${i}" title="基数">${['1:N', '1:1', 'N:M', 'N:1'].map((x) => `<option value="${x}"${(r.card || '1:N') === x ? ' selected' : ''}>${x}</option>`).join('')}</select>` +
+            `<button type="button" class="ae-er-reldel" data-er-rel-del="${i}" title="删除关系">×</button>` +
+            `</div>`
+          ).join('') + `</div>`
+        : `<button type="button" class="ae-er-relempty" data-add="relations">＋ 添加第一条关系</button>`) +
+      `<p class="ae-er-relhint">实体内点「＋ 字段」增加属性；字段首格可写 PK / FK。</p>` +
+      `</div>`;
+  }
+
   function decorateVideo() {
     if (draft.type !== 'video') return;
     const frame = prevEl.querySelector('.vid-frame');
@@ -352,11 +414,13 @@ window.AdvancedEditor = (function () {
     decorateNodeTools();
     decorateCompare();
     decorateGroup();
+    decorateER();
     decorateVideo();
   }
 
   /* ---------------- 直接编辑 ---------------- */
   function targetOf(el) {
+    if (el.dataset.erEdit) return { kind: 'path', path: el.dataset.erEdit, key: el.dataset.erEdit.split('.').pop() };
     if (el.dataset.nodeField) {
       return {
         kind: 'node',
@@ -399,8 +463,18 @@ window.AdvancedEditor = (function () {
     }
   }
 
+  function syncErMirrors(t, value) {
+    if (!t || t.kind !== 'path') return;
+    const m = /^relations\.(\d+)\.label$/.exec(String(t.path));
+    if (!m) return;
+    const i = m[1];
+    prevEl.querySelectorAll(`.er-rel[data-er-rel-index="${i}"], .ae-er-relname[data-er-edit="relations.${i}.label"]`).forEach((el) => {
+      if (el !== document.activeElement) el.innerText = value;
+    });
+  }
+
   function wireEditable() {
-    prevEl.querySelectorAll('[data-edit],[data-node-field]').forEach((el) => {
+    prevEl.querySelectorAll('[data-edit],[data-node-field],[data-er-edit]').forEach((el) => {
       if (el.closest('.ae-node-tools')) return;
       const t = targetOf(el);
       if (!t) return;
@@ -427,6 +501,7 @@ window.AdvancedEditor = (function () {
       el.addEventListener('input', () => {
         const value = html ? el.innerHTML : el.innerText;
         writeTarget(t, value);
+        syncErMirrors(t, value);
         refreshCount();
       });
     });
@@ -500,6 +575,103 @@ window.AdvancedEditor = (function () {
     while (draft.cols.length > n) draft.cols.pop();
   }
 
+  /* ---------------- E-R 图 ---------------- */
+  function focusErEdit(path) {
+    const el = prevEl && prevEl.querySelector(`[data-er-edit="${path}"]`);
+    if (!el) return;
+    setTimeout(() => {
+      el.focus();
+      const r = document.createRange();
+      r.selectNodeContents(el);
+      const s = window.getSelection();
+      s.removeAllRanges();
+      s.addRange(r);
+    }, 20);
+  }
+
+  function addErEntity() {
+    if (!Array.isArray(draft.entities)) draft.entities = [];
+    if (draft.entities.length >= ER_MAX.entities) return U.toast(`最多 ${ER_MAX.entities} 个实体`);
+    const pos = [[3, 4], [66, 3], [36, 52], [3, 52], [66, 52], [36, 4]][draft.entities.length] || [24, 36];
+    const n = draft.entities.length + 1;
+    draft.entities.push({
+      id: U.uid('e'),
+      name: `新实体 ${n}`,
+      x: pos[0],
+      y: pos[1],
+      fields: [{ name: 'id', key: 'PK' }, { name: '字段', key: '' }],
+    });
+    renderAll();
+    focusErEdit(`entities.${draft.entities.length - 1}.name`);
+    U.toast('已添加实体，直接改名字和字段');
+  }
+
+  function deleteErEntity(i) {
+    const ents = draft.entities || [];
+    if (ents.length <= 1) return U.toast('至少保留 1 个实体');
+    const removed = ents[i];
+    if (!removed) return;
+    draft.entities.splice(i, 1);
+    if (Array.isArray(draft.relations) && removed.id) {
+      draft.relations = draft.relations.filter((r) => r && r.from !== removed.id && r.to !== removed.id);
+    }
+    renderAll();
+    U.toast('实体及其关系已删除');
+  }
+
+  function addErField(i) {
+    const ent = (draft.entities || [])[i];
+    if (!ent) return;
+    if (!Array.isArray(ent.fields)) ent.fields = [];
+    if (ent.fields.length >= ER_MAX.fields) return U.toast(`每个实体最多 ${ER_MAX.fields} 个字段`);
+    ent.fields.push({ name: '新字段', key: '' });
+    renderAll();
+    focusErEdit(`entities.${i}.fields.${ent.fields.length - 1}.name`);
+  }
+
+  function deleteErField(i, j) {
+    const ent = (draft.entities || [])[i];
+    if (!ent || !Array.isArray(ent.fields) || !ent.fields[j]) return;
+    if (ent.fields.length <= 1) return U.toast('至少保留 1 个字段');
+    ent.fields.splice(j, 1);
+    renderAll();
+  }
+
+  function addErRelation() {
+    const ents = Array.isArray(draft.entities) ? draft.entities : [];
+    if (ents.length < 2) return U.toast('至少需要 2 个实体才能建立关系');
+    if (!Array.isArray(draft.relations)) draft.relations = [];
+    if (draft.relations.length >= ER_MAX.relations) return U.toast(`最多 ${ER_MAX.relations} 条关系`);
+    draft.relations.push({
+      id: U.uid('r'),
+      from: ents[0].id,
+      to: ents[1].id,
+      label: '关联',
+      card: '1:N',
+    });
+    renderAll();
+    focusErEdit(`relations.${draft.relations.length - 1}.label`);
+    U.toast('已添加关系，选择起止实体并改关系名');
+  }
+
+  function deleteErRelation(i) {
+    if (!Array.isArray(draft.relations) || !draft.relations[i]) return;
+    draft.relations.splice(i, 1);
+    renderAll();
+  }
+
+  function setErRelation(i, key, value) {
+    const r = (draft.relations || [])[i];
+    if (!r) return;
+    if (key === 'from' || key === 'to') {
+      if (value === r.from || value === r.to) return;
+      r[key] = value;
+    } else if (key === 'card') {
+      r.card = value || '1:N';
+    }
+    renderAll();
+  }
+
   /* ---------------- 视频 ---------------- */
   function readVideoFile(file) {
     if (!file) return;
@@ -541,6 +713,8 @@ window.AdvancedEditor = (function () {
     if (add) {
       if (add.dataset.add === 'nodes') addNode('nodes');
       else if (add.dataset.add === 'points') addPoint();
+      else if (add.dataset.add === 'entities') addErEntity();
+      else if (add.dataset.add === 'relations') addErRelation();
       else if (add.dataset.add === 'verdict') {
         draft.verdict = '一句话结论';
         renderAll();
@@ -549,6 +723,18 @@ window.AdvancedEditor = (function () {
       }
       return true;
     }
+    const erEntityDel = el.closest('[data-er-entity-del]');
+    if (erEntityDel) { deleteErEntity(Number(erEntityDel.dataset.erEntityDel)); return true; }
+    const erFieldAdd = el.closest('[data-er-field-add]');
+    if (erFieldAdd) { addErField(Number(erFieldAdd.dataset.erFieldAdd)); return true; }
+    const erFieldDel = el.closest('[data-er-field-del]');
+    if (erFieldDel) {
+      const parts = String(erFieldDel.dataset.erFieldDel).split(':');
+      deleteErField(Number(parts[0]), Number(parts[1]));
+      return true;
+    }
+    const erRelDel = el.closest('[data-er-rel-del]');
+    if (erRelDel) { deleteErRelation(Number(erRelDel.dataset.erRelDel)); return true; }
     const up = el.closest('[data-nup]');
     if (up) { moveNode(up.dataset.nup, Number(up.dataset.nidx), -1); return true; }
     const down = el.closest('[data-ndown]');
@@ -609,10 +795,41 @@ window.AdvancedEditor = (function () {
 
   function onOverlayChange(ev) {
     if (ev.target && ev.target.id === 'ae-video-file') readVideoFile(ev.target.files && ev.target.files[0]);
+    const t = ev.target;
+    if (!t || !t.dataset) return;
+    if (t.dataset.erRelFrom != null) setErRelation(Number(t.dataset.erRelFrom), 'from', t.value);
+    else if (t.dataset.erRelTo != null) setErRelation(Number(t.dataset.erRelTo), 'to', t.value);
+    else if (t.dataset.erRelCard != null) setErRelation(Number(t.dataset.erRelCard), 'card', t.value);
   }
 
   function onPointerDown(ev) {
     if (!ov) return;
+    if (draft.type === 'er') {
+      const ent = ev.target.closest('.er-entity[data-er-entity-index]');
+      if (ent) {
+        const handle = ev.target.closest('.ae-er-drag');
+        if (!handle && ev.target.closest('[contenteditable], button, select')) return;
+        const i = Number(ent.dataset.erEntityIndex);
+        const item = (draft.entities || [])[i];
+        const board = prevEl && prevEl.querySelector('.er-board');
+        if (!item || !board) return;
+        const br = board.getBoundingClientRect();
+        if (!br.width || !br.height) return;
+        const wr = ent.getBoundingClientRect();
+        drag = {
+          kind: 'er', i, item, board, node: ent,
+          wPct: wr.width / br.width * 100,
+          hPct: wr.height / br.height * 100,
+          sx: ev.clientX, sy: ev.clientY,
+          x: Number(item.x) || 0, y: Number(item.y) || 0,
+          moved: false,
+        };
+        ent.classList.add('is-dragging');
+        try { ent.setPointerCapture(ev.pointerId); } catch (err) {}
+        ev.preventDefault();
+        return;
+      }
+    }
     const dot = ev.target.closest('[data-point-dot]');
     if (dot) {
       const i = Number(dot.dataset.pointDot);
@@ -640,6 +857,18 @@ window.AdvancedEditor = (function () {
 
   function onPointerMove(ev) {
     if (!drag) return;
+    if (drag.kind === 'er') {
+      const br = drag.board.getBoundingClientRect();
+      const nx = clamp(drag.x + (ev.clientX - drag.sx) / br.width * 100, 0, Math.max(0, 100 - drag.wPct));
+      const ny = clamp(drag.y + (ev.clientY - drag.sy) / br.height * 100, 0, Math.max(0, 100 - drag.hPct));
+      drag.item.x = Math.round(nx * 10) / 10;
+      drag.item.y = Math.round(ny * 10) / 10;
+      drag.node.style.left = drag.item.x + '%';
+      drag.node.style.top = drag.item.y + '%';
+      if (window.AdvancedComponents && AdvancedComponents.layout) AdvancedComponents.layout(prevEl);
+      drag.moved = true;
+      return;
+    }
     if (drag.kind === 'matrix') {
       const r = drag.board.getBoundingClientRect();
       const plot = {
@@ -698,7 +927,10 @@ window.AdvancedEditor = (function () {
 
   function onPointerUp(ev) {
     if (!drag) return;
-    if (drag.kind === 'matrix' && drag.moved) {
+    if (drag.kind === 'er') {
+      drag.node.classList.remove('is-dragging');
+      if (drag.moved) U.toast(`实体位置：X ${drag.item.x}% / Y ${drag.item.y}%`);
+    } else if (drag.kind === 'matrix' && drag.moved) {
       U.toast(`点位位置：X ${drag.item.x} / Y ${drag.item.y}`);
     } else if (drag.kind === 'reorder') {
       drag.node.classList.remove('is-dragging');
@@ -816,6 +1048,24 @@ window.AdvancedEditor = (function () {
     if (!Array.isArray(draft.cols)) draft.cols = [];
     if (!Array.isArray(draft.members)) draft.members = [];
     if (draft.type === 'columns') setCols((draft.cols || []).length || 2);
+    if (draft.type === 'er') {
+      if (!Array.isArray(draft.entities)) draft.entities = [];
+      if (!Array.isArray(draft.relations)) draft.relations = [];
+      draft.entities.forEach((ent, i) => {
+        if (!ent.id) ent.id = 'e' + (i + 1);
+        if (!Array.isArray(ent.fields)) ent.fields = [];
+        ent.x = clamp(Number(ent.x) || 0, 0, 100);
+        ent.y = clamp(Number(ent.y) || 0, 0, 100);
+      });
+      const ids = new Set(draft.entities.map((ent) => ent.id));
+      const first = draft.entities[0] && draft.entities[0].id;
+      const second = draft.entities[1] && draft.entities[1].id;
+      draft.relations.forEach((r) => {
+        if (!ids.has(r.from)) r.from = first || '';
+        if (!ids.has(r.to)) r.to = second || r.from || '';
+        if (!r.card) r.card = '1:N';
+      });
+    }
     build();
   }
 

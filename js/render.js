@@ -45,6 +45,7 @@ window.Renderer = (function () {
       case 'cycle':
       case 'hierarchy':
       case 'matrix':
+      case 'er':
       case 'compare':
       case 'columns':
       case 'video':

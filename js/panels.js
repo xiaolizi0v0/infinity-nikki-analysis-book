@@ -72,6 +72,7 @@ window.Panels = (function () {
     if (e.type === 'cycle') return e.title || '循环图';
     if (e.type === 'hierarchy') return e.title || '层级图';
     if (e.type === 'matrix') return e.title || '矩阵';
+    if (e.type === 'er') return e.title || 'E-R 图';
     if (e.type === 'compare') return e.title || '对比卡';
     if (e.type === 'group') return e.title || '分组框';
     if (e.type === 'columns') return e.title || '分栏';
@@ -370,6 +371,15 @@ window.Panels = (function () {
         <p class="fld-h">四种预设会自动切换强调色和引导问题，方便把“判断”和“证据”分开。</p>
       </div>`;
     }
+    if (e.type === 'er') {
+      const ents = Array.isArray(e.entities) ? e.entities : [];
+      const rels = Array.isArray(e.relations) ? e.relations : [];
+      return `<div class="sect">
+        ${field('标题', input('title', e.title))}
+        ${field('强调色', select('tone', e.tone || 'violet', TONES))}
+        <p class="fld-h">${ents.length} 个实体 · ${rels.length} 条关系。实体名、字段、关系名与起止端点都在「打开完整编辑窗口」的全屏画布编辑器里修改。</p>
+      </div>`;
+    }
     if (e.type === 'group') {
       const members = (window.Groups ? Groups.memberIds(e) : (e.members || []));
       return `<div class="sect">
@@ -472,7 +482,7 @@ window.Panels = (function () {
         <button class="btn wide violet" data-act="edit-window">打开来源编辑器…</button>
       </div>`;
     }
-    if ({ timeline: 1, cycle: 1, hierarchy: 1, matrix: 1, compare: 1, columns: 1, video: 1, semantic: 1, group: 1 }[e.type]) {
+    if ({ timeline: 1, cycle: 1, hierarchy: 1, matrix: 1, er: 1, compare: 1, columns: 1, video: 1, semantic: 1, group: 1 }[e.type]) {
       return `<button class="btn wide violet adv-open-btn" data-act="edit-window">打开完整编辑窗口…</button>` + advPanel(e);
     }
     if (e.type === 'image') {

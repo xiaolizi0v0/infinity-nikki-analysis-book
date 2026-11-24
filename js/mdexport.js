@@ -27,6 +27,7 @@ window.MDExport = (function () {
     cycle: '循环图',
     hierarchy: '层级图',
     matrix: '矩阵',
+    er: 'E-R 图',
     compare: '对比卡',
     group: '分组框',
     columns: '分栏',
@@ -289,6 +290,7 @@ window.MDExport = (function () {
       case 'cycle': return clean(e.title) || '循环图';
       case 'hierarchy': return clean(e.title) || '层级图';
       case 'matrix': return clean(e.title) || '矩阵';
+      case 'er': return clean(e.title) || 'E-R 图';
       case 'compare': return clean(e.title) || '对比卡';
       case 'group': return clean(e.title) || '分组';
       case 'columns': return clean(e.title) || '分栏';
@@ -601,6 +603,53 @@ window.MDExport = (function () {
     return out.join('\n');
   }
 
+  function renderER(e) {
+    const entities = Array.isArray(e.entities) ? e.entities.filter(Boolean) : [];
+    const relations = Array.isArray(e.relations) ? e.relations.filter(Boolean) : [];
+    const byId = {};
+    entities.forEach((ent) => { if (ent.id) byId[ent.id] = ent; });
+    const cardParts = (card) => {
+      const p = String(card || '1:N').split(':');
+      return [p[0] || '1', p[1] || 'N'];
+    };
+    const out = [
+      `**实体数**：${entities.length}`,
+      `**关系数**：${relations.length}`,
+      '',
+      '**实体与字段**',
+      '',
+    ];
+    const eRows = [['实体', '字段', '主键 / 外键']];
+    entities.forEach((ent, i) => {
+      const fields = Array.isArray(ent.fields) ? ent.fields.filter(Boolean) : [];
+      const names = fields.map((fld) => clean(fld.name) || '—').join('、') || '—';
+      const keys = fields.filter((fld) => clean(fld.key)).map((fld) => `${clean(fld.name) || '—'}（${clean(fld.key)}）`).join('、') || '—';
+      eRows.push([clean(ent.name) || `实体${i + 1}`, names, keys]);
+    });
+    out.push(entities.length ? mdTable(eRows) : '（暂无实体）');
+
+    out.push('', '**关系**', '');
+    if (!relations.length) {
+      out.push('（暂无关系）');
+      return out.join('\n');
+    }
+    const rRows = [['起点实体', '关系', '终点实体', '基数']];
+    const lines = [];
+    relations.forEach((rel, i) => {
+      const from = byId[rel.from] || {};
+      const to = byId[rel.to] || {};
+      const [fc, tc] = cardParts(rel.card);
+      const fromName = clean(from.name) || `实体${i + 1}`;
+      const toName = clean(to.name) || '未连接实体';
+      const label = clean(rel.label) || '关联';
+      rRows.push([fromName, label, toName, `${fc}:${tc}`]);
+      lines.push(`- ${fromName}（${fc}）—${label}→ ${toName}（${tc}）`);
+    });
+    out.push(mdTable(rRows));
+    out.push('', '**关系读法**', '', ...lines);
+    return out.join('\n');
+  }
+
   function renderCompare(e, depth) {
     const out = [];
     const left = e.left || {};
@@ -714,6 +763,7 @@ window.MDExport = (function () {
       case 'cycle': body = renderCycle(e); break;
       case 'hierarchy': body = renderHierarchy(e); break;
       case 'matrix': body = renderMatrix(e); break;
+      case 'er': body = renderER(e); break;
       case 'compare': body = renderCompare(e, depth || 0); break;
       case 'group': body = renderGroup(e, depth || 0, ctx); break;
       case 'columns': body = renderColumns(e, depth || 0); break;
@@ -829,6 +879,7 @@ window.MDExport = (function () {
       '- **分组框**：分组框成员嵌套在分组标题下，不再作为独立顶层组件重复出现。\n' +
       '- **流程图 / 状态图**：关系用 Mermaid 代码块表达；节点文字就是图上的标签。\n' +
       '- **矩阵**：X / Y 是 0–100 的归一化坐标；象限标签与点位分别列出。\n' +
+      '- **E-R 图**：实体字段、主外键与关系基数分表列出，并附「起点（基数）—关系→ 终点（基数）」的线性读法。\n' +
       '- **表格 / 时间轴 / 层级图**：使用原生 Markdown 表格；单元格内换行转为 `<br>`。\n' +
       '- **媒体**：远程图片 / 视频保留链接；内嵌 data/blob 媒体只保留标题和说明，避免 Markdown 体积膨胀。\n' +
       '- **坐标说明**：除矩阵点位外，画布坐标、组件宽高、缩放、阴影等视觉参数均已省略。'

@@ -140,6 +140,7 @@ window.Canvas = (function () {
       world.appendChild(n);
       nodes.set(e.id, n);
       if (e.type === 'image') paintImage(n, e);
+      if (e.type === 'er' && window.AdvancedComponents) AdvancedComponents.layout(n);
     });
     if (window.Groups) Groups.syncAll();
     const alive = new Set((Store.get().elements || []).map((e) => e.id));
@@ -167,6 +168,7 @@ window.Canvas = (function () {
     else world.appendChild(n);
     nodes.set(id, n);
     if (e.type === 'image') paintImage(n, e);
+    if (e.type === 'er' && window.AdvancedComponents) AdvancedComponents.layout(n);
     if (e.type === 'flowchart') {
       const svg = n.querySelector('svg');
       if (svg) {
@@ -354,8 +356,13 @@ window.Canvas = (function () {
       const host = ev.target.closest && ev.target.closest('.el');
       if (ed && host) { startEdit(host, ed); return; }
       if (!host) return;
-      if ((Store.el(host.dataset.id) || {}).type === 'image' && window.ImgEditor) {
-        ImgEditor.open(host.dataset.id);
+      const hostEl = Store.el(host.dataset.id) || {};
+      if (hostEl.type === 'er' && window.EREditor) {
+        EREditor.open(hostEl.id);
+        return;
+      }
+      if (hostEl.type === 'image' && window.ImgEditor) {
+        ImgEditor.open(hostEl.id);
       }
     });
 
@@ -405,6 +412,7 @@ window.Canvas = (function () {
     const e = Store.el(id);
     if (!e) return;
     if (e.type === 'flowchart' && window.FlowEditor) return FlowEditor.open(id);
+    if (e.type === 'er' && window.EREditor) return EREditor.open(id);
     if (e.type === 'image' && window.ImgEditor) return ImgEditor.open(id);
     if (e.type === 'table' && window.TableEditor) return TableEditor.open(id);
     if (e.type === 'state' && window.StateEditor) return StateEditor.open(id);
