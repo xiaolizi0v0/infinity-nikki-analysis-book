@@ -100,8 +100,8 @@ window.EREditor = (function () {
       if (!ent.id) ent.id = 'e' + (i + 1);
       if (!Array.isArray(ent.fields)) ent.fields = [];
       ent.name = String(ent.name == null ? '实体' : ent.name);
-      ent.x = clamp(Number(ent.x) || 0, 0, 100);
-      ent.y = clamp(Number(ent.y) || 0, 0, 100);
+      ent.x = Number.isFinite(Number(ent.x)) ? Number(ent.x) : 0;
+      ent.y = Number.isFinite(Number(ent.y)) ? Number(ent.y) : 0;
     });
     el.relations.forEach((rel, i) => {
       if (!rel.id) rel.id = 'r' + (i + 1);
@@ -716,12 +716,29 @@ window.EREditor = (function () {
         n.classList.add('dragging');
       }
       if (!moved) return;
-      const nx = clamp(startLeft + dx / view.z, 0, W - n.offsetWidth);
-      const ny = clamp(startTop + dy / view.z, 0, H - n.offsetHeight);
+
+      // 世界坐标不设边界；靠近可见画布的边缘时只平移视口，让卡片一直留在视野里，
+      // 因而可以持续向左/右/上/下拖，不会再撞到 920×600 的隐形墙。
+      const nx = startLeft + dx / view.z;
+      const ny = startTop + dy / view.z;
       n.style.left = nx + 'px';
       n.style.top = ny + 'px';
       ent.x = (nx / W) * 100;
       ent.y = (ny / H) * 100;
+
+      const cr = canvasEl.getBoundingClientRect();
+      const EDGE = 76, MARGIN = 24;
+      let vx = view.x, vy = view.y;
+      if (e.clientX < cr.left + EDGE) vx = MARGIN - nx * view.z;
+      else if (e.clientX > cr.right - EDGE) vx = cr.width - MARGIN - n.offsetWidth * view.z - nx * view.z;
+      if (e.clientY < cr.top + EDGE) vy = MARGIN - ny * view.z;
+      else if (e.clientY > cr.bottom - EDGE) vy = cr.height - MARGIN - n.offsetHeight * view.z - ny * view.z;
+      if (vx !== view.x || vy !== view.y) {
+        view.x = vx;
+        view.y = vy;
+        applyView();
+      }
+
       if (raf) cancelAnimationFrame(raf);
       raf = requestAnimationFrame(layoutEdges);
       const pos = propEl?.querySelector('.ere-posrow b');
@@ -1176,7 +1193,8 @@ window.EREditor = (function () {
               ).join('') +
             '</div>' +
             '<div class="fe-hint">' +
-              '<b>拖动</b> 实体卡可自由摆放<br>' +
+              '<b>拖动</b> 实体卡可自由摆放，靠近边缘会自动平移<br>' +
+              '<b>画布</b> 拖空白处平移，滚轮缩放<br>' +
               '<b>字段</b> 双击改名，× 删除，＋ 添加<br>' +
               '<b>锚点</b> 从卡片四边拖到另一个实体，建立关系<br>' +
               '<b>双击</b> 实体名可直接改字<br>' +
@@ -1221,6 +1239,42 @@ window.EREditor = (function () {
     title.addEventListener('blur', () => endNow('er-title'));
   }
 
+  // 编辑画布不限制拖动，实体坐标可以越出 920×600；关闭时把整组实体平移/缩回
+  // 0–100% 的组件画板范围，保证画布上的静态 E-R 图仍能完整显示。
+  function fitPositionsToBoard() {
+    if (!el || !el.entities.length) return false;
+    const CARD_W = 26.5;          // 静态 E-R 卡片宽度占画板比例
+    const PAD = 2.5;
+    const cardH = (ent) => Math.min(80, 11 + ((ent.fields && ent.fields.length) || 0) * 6);
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    el.entities.forEach((ent) => {
+      const h = cardH(ent);
+      minX = Math.min(minX, ent.x);
+      minY = Math.min(minY, ent.y);
+      maxX = Math.max(maxX, ent.x + CARD_W);
+      maxY = Math.max(maxY, ent.y + h);
+    });
+    const outX = minX < 0 || maxX > 100;
+    const outY = minY < 0 || maxY > 100;
+    if (!outX && !outY) return false;
+
+    const availW = 100 - PAD * 2;
+    const availH = 100 - PAD * 2;
+    const spanX = Math.max(1, maxX - minX);
+    const spanY = Math.max(1, maxY - minY);
+    const scaleX = outX && spanX > availW ? availW / spanX : 1;
+    const scaleY = outY && spanY > availH ? availH / spanY : 1;
+    const offsetX = outX ? PAD - minX * scaleX : 0;
+    const offsetY = outY ? PAD - minY * scaleY : 0;
+
+    begin();
+    el.entities.forEach((ent) => {
+      ent.x = clamp(ent.x * scaleX + offsetX, PAD, 100 - CARD_W - PAD);
+      ent.y = clamp(ent.y * scaleY + offsetY, PAD, Math.max(PAD, 100 - cardH(ent) - PAD));
+    });
+    return true;
+  }
+
   function open(id) {
     const e = Store.el(id);
     if (!e || e.type !== 'er') return;
@@ -1241,7 +1295,8 @@ window.EREditor = (function () {
   function close() {
     if (!overlay) return;
     commitInline(true);
-    endNow('er-close');
+    if (fitPositionsToBoard()) endNow('er-fit');
+    else endNow('er-close');
     window.removeEventListener('keydown', onKeyDown, true);
     overlay.remove();
     overlay = null;
