@@ -9,7 +9,6 @@ window.EREditor = (function () {
   const NODE_W = 210;
   const MAX_ENTITIES = 6;
   const MAX_RELATIONS = 10;
-  const MAX_FIELDS = 8;
 
   const E = (s) => U.esc(s);
   const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -326,9 +325,9 @@ window.EREditor = (function () {
       propEl.innerHTML =
         '<div class="fe-row"><span>类型</span><b>实体 · 字段表</b></div>' +
         `<label class="fe-f"><span>实体名</span><input id="ere-name" class="fe-ipt" maxlength="18" value="${E(ent.name)}" placeholder="例如：玩家"></label>` +
-        `<div class="fe-row"><span>字段</span><b>${ent.fields.length} / ${MAX_FIELDS}</b></div>` +
+        `<div class="fe-row"><span>字段</span><b>${ent.fields.length} 个字段</b></div>` +
         `<div class="ere-fieldlist">${fields || '<div class="fe-empty">还没有字段</div>'}</div>` +
-        `<button type="button" class="fe-btn wide" data-act="add-field"${ent.fields.length >= MAX_FIELDS ? ' disabled' : ''}>＋ 添加字段</button>` +
+        `<button type="button" class="fe-btn wide" data-act="add-field">＋ 添加字段</button>` +
         `<div class="fe-row ere-posrow"><span>位置</span><b>X ${Math.round(ent.x)}% · Y ${Math.round(ent.y)}%</b></div>` +
         '<button type="button" class="fe-btn danger wide" data-act="del-entity">删除实体</button>';
       bindEntityInputs(ent);
@@ -613,10 +612,6 @@ window.EREditor = (function () {
   function addField(opts) {
     const ent = (opts && opts.ent) || (sel && sel.type === 'entity' ? entById(sel.id) : null);
     if (!ent) return;
-    if (ent.fields.length >= MAX_FIELDS) {
-      U.toast(`每个实体最多 ${MAX_FIELDS} 个字段`);
-      return;
-    }
     begin();
     const field = { name: '新字段', key: '' };
     ent.fields.push(field);

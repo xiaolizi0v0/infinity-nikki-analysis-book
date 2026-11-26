@@ -316,11 +316,13 @@ window.AdvancedComponents = (function () {
   function erCard(e) {
     const entities = erList(e);
     const relations = erRelationList(e);
+    const maxFields = entities.reduce((m, item) => Math.max(m, Array.isArray(item.fields) ? item.fields.length : 0), 0);
+    const boardH = 420 + Math.max(0, maxFields - 8) * 24;
     return (
       `<div class="adv-card er-card tone-${tone(e, 'violet')}">` +
       head('E-R', e.title || '系统 E-R 图', `${entities.length} 实体 · ${relations.length} 关系`) +
       `<div class="er-stage">` +
-      `<div class="er-board" data-er-board>` +
+      `<div class="er-board" data-er-board style="aspect-ratio:760/${boardH}">` +
       `<svg class="er-wires" aria-hidden="true">` +
       relations.map((r, i) =>
         `<path class="er-line" data-er-line="${i}" data-from="${E(r.from || '')}" data-to="${E(r.to || '')}" d=""/>`
