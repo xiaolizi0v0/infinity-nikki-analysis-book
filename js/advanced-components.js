@@ -291,10 +291,12 @@ window.AdvancedComponents = (function () {
     return [parts[0] || '1', parts[1] || 'N'];
   }
 
-  function erEntity(item, i) {
+  function erEntity(item, i, pos) {
     const fields = Array.isArray(item.fields) ? item.fields.filter(Boolean) : [];
+    const left = pos ? pos.left : Number(item.x) || 0;
+    const top = pos ? pos.top : Number(item.y) || 0;
     return (
-      `<div class="er-entity" data-er-entity-id="${E(item.id || ('e' + (i + 1)))}" data-er-entity-index="${i}" style="left:${(Number(item.x) || 0).toFixed(2)}%;top:${(Number(item.y) || 0).toFixed(2)}%">` +
+      `<div class="er-entity" data-er-entity-id="${E(item.id || ('e' + (i + 1)))}" data-er-entity-index="${i}" style="left:${Number(left).toFixed(2)}%;top:${Number(top).toFixed(2)}%">` +
       `<div class="er-entity-head">` +
       `<span class="er-entity-kind">ENTITY ${String(i + 1).padStart(2, '0')}</span>` +
       `<div class="er-entity-name" data-er-edit="entities.${i}.name">${E(item.name || '未命名实体')}</div>` +
@@ -313,16 +315,73 @@ window.AdvancedComponents = (function () {
     );
   }
 
+  // 编辑器世界是 920×600，静态 E-R 画板逻辑宽 760；卡片实际字号 / 行高随画板宽度缩放。
+  // 这里按字段数估算卡片高度，把整组卡片重新放进一个自适应高度的画板：
+  // 横向只做整体平移，纵向保留编辑器里的上下间距，避免多字段卡片在保存后叠在一起。
+  function erStaticLayout(entities) {
+    if (!entities.length) return { h: 420, pos: [] };
+    const BOARD_W = 760;
+    const EDIT_W = 920;
+    const EDIT_H = 600;
+    const NODE_W = 210;
+    const CARD_W = 201.4;      // 26.5% × 760
+    const PAD = 20;
+    const GAP = 24;
+    // 窄画板下字段行高是固定像素，换算到 760 设计宽时会比按比例估算更高，
+    // 这里用偏保守的卡片高度，避免最底部字段被画板裁掉。
+    const cardH = (item) => 50 + 30 * ((item.fields && item.fields.length) || 0);
+    // 编辑器的卡宽是 210 / 920，静态板卡宽是 201.4 / 760；按卡片宽度同比例缩放 x，
+    // 才能保留并排实体之间的真实间隙，而不是把百分比直接拉伸后误判成横向重叠。
+    const lefts = entities.map((item) => (Number(item.x) || 0) / 100 * EDIT_W * CARD_W / NODE_W);
+    const tops = entities.map((item) => (Number(item.y) || 0) / 100 * EDIT_H);
+    const heights = entities.map(cardH);
+    const minL = Math.min(...lefts);
+    const maxL = Math.max(...lefts);
+    const spanX = Math.max(1, maxL - minL);
+    // 缩放的是卡片左坐标，卡宽本身不跟着缩；可用跨度要扣掉一个卡宽和左右留白。
+    const availX = BOARD_W - PAD * 2 - CARD_W;
+    const scaleX = spanX > availX ? availX / spanX : 1;
+    const offsetX = PAD - minL * scaleX;
+    const leftPx = lefts.map((v) => v * scaleX + offsetX);
+
+    // 同一竖列上的卡片如果已被旧版收拢逻辑压到一起，按原顺序向下让位，
+    // 让已保存过的旧文档也能自动恢复成不重叠的排布。
+    const topPx = tops.slice();
+    const placed = [];
+    entities.map((item, i) => i)
+      .sort((a, b) => tops[a] - tops[b] || a - b)
+      .forEach((i) => {
+        let y = topPx[i];
+        placed.forEach((j) => {
+          const overlapX = leftPx[i] < leftPx[j] + CARD_W && leftPx[j] < leftPx[i] + CARD_W;
+          if (overlapX) y = Math.max(y, topPx[j] + heights[j] + GAP);
+        });
+        topPx[i] = y;
+        placed.push(i);
+      });
+
+    const minT = Math.min(...topPx);
+    const maxB = Math.max(...entities.map((item, i) => topPx[i] + heights[i]));
+    const boardH = Math.max(420, maxB - minT + PAD * 2);
+    const offsetY = PAD - minT;
+    return {
+      h: boardH,
+      pos: entities.map((item, i) => ({
+        left: leftPx[i] / BOARD_W * 100,
+        top: (topPx[i] + offsetY) / boardH * 100,
+      })),
+    };
+  }
+
   function erCard(e) {
     const entities = erList(e);
     const relations = erRelationList(e);
-    const maxFields = entities.reduce((m, item) => Math.max(m, Array.isArray(item.fields) ? item.fields.length : 0), 0);
-    const boardH = 420 + Math.max(0, maxFields - 8) * 24;
+    const layout = erStaticLayout(entities);
     return (
       `<div class="adv-card er-card tone-${tone(e, 'violet')}">` +
       head('E-R', e.title || '系统 E-R 图', `${entities.length} 实体 · ${relations.length} 关系`) +
       `<div class="er-stage">` +
-      `<div class="er-board" data-er-board style="aspect-ratio:760/${boardH}">` +
+      `<div class="er-board" data-er-board style="aspect-ratio:760/${layout.h}">` +
       `<svg class="er-wires" aria-hidden="true">` +
       relations.map((r, i) =>
         `<path class="er-line" data-er-line="${i}" data-from="${E(r.from || '')}" data-to="${E(r.to || '')}" d=""/>`
@@ -334,7 +393,7 @@ window.AdvancedComponents = (function () {
           `<span class="er-end is-from" data-er-end-from="${i}">${E(fromCard)}</span>` +
           `<span class="er-end is-to" data-er-end-to="${i}">${E(toCard)}</span>`;
       }).join('') +
-      entities.map(erEntity).join('') +
+      entities.map((item, i) => erEntity(item, i, layout.pos[i])).join('') +
       (entities.length ? '' : empty('还没有实体。点上方「＋ 添加实体」开始画关系。')) +
       `</div>` +
       `</div>` +

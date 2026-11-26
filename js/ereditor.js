@@ -1234,42 +1234,6 @@ window.EREditor = (function () {
     title.addEventListener('blur', () => endNow('er-title'));
   }
 
-  // 编辑画布不限制拖动，实体坐标可以越出 920×600；关闭时把整组实体平移/缩回
-  // 0–100% 的组件画板范围，保证画布上的静态 E-R 图仍能完整显示。
-  function fitPositionsToBoard() {
-    if (!el || !el.entities.length) return false;
-    const CARD_W = 26.5;          // 静态 E-R 卡片宽度占画板比例
-    const PAD = 2.5;
-    const cardH = (ent) => Math.min(80, 11 + ((ent.fields && ent.fields.length) || 0) * 6);
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    el.entities.forEach((ent) => {
-      const h = cardH(ent);
-      minX = Math.min(minX, ent.x);
-      minY = Math.min(minY, ent.y);
-      maxX = Math.max(maxX, ent.x + CARD_W);
-      maxY = Math.max(maxY, ent.y + h);
-    });
-    const outX = minX < 0 || maxX > 100;
-    const outY = minY < 0 || maxY > 100;
-    if (!outX && !outY) return false;
-
-    const availW = 100 - PAD * 2;
-    const availH = 100 - PAD * 2;
-    const spanX = Math.max(1, maxX - minX);
-    const spanY = Math.max(1, maxY - minY);
-    const scaleX = outX && spanX > availW ? availW / spanX : 1;
-    const scaleY = outY && spanY > availH ? availH / spanY : 1;
-    const offsetX = outX ? PAD - minX * scaleX : 0;
-    const offsetY = outY ? PAD - minY * scaleY : 0;
-
-    begin();
-    el.entities.forEach((ent) => {
-      ent.x = clamp(ent.x * scaleX + offsetX, PAD, 100 - CARD_W - PAD);
-      ent.y = clamp(ent.y * scaleY + offsetY, PAD, Math.max(PAD, 100 - cardH(ent) - PAD));
-    });
-    return true;
-  }
-
   function open(id) {
     const e = Store.el(id);
     if (!e || e.type !== 'er') return;
@@ -1290,8 +1254,7 @@ window.EREditor = (function () {
   function close() {
     if (!overlay) return;
     commitInline(true);
-    if (fitPositionsToBoard()) endNow('er-fit');
-    else endNow('er-close');
+    endNow('er-close');
     window.removeEventListener('keydown', onKeyDown, true);
     overlay.remove();
     overlay = null;
